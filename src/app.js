@@ -6,6 +6,10 @@ const WEEKDAYS = [
   { label: "Jeudi", offset: 3 },
   { label: "Vendredi", offset: 4 },
 ];
+const SHIFTS = [
+  { label: "Matin", timeRange: "8H00 - 13H00" },
+  { label: "Apres-midi", timeRange: "14H00 - 17H00" },
+];
 
 const elements = {
   weekStart: document.querySelector("#weekStart"),
@@ -14,9 +18,15 @@ const elements = {
   generateButton: document.querySelector("#generateButton"),
   resetButton: document.querySelector("#resetButton"),
   exportButton: document.querySelector("#exportButton"),
+  printButton: document.querySelector("#printButton"),
   scheduleBody: document.querySelector("#scheduleBody"),
   rowTemplate: document.querySelector("#rowTemplate"),
   statusText: document.querySelector("#statusText"),
+  weekNumber: document.querySelector("#weekNumber"),
+  weekDates: document.querySelector("#weekDates"),
+  weekBadgeText: document.querySelector("#weekBadgeText"),
+  summaryPanel: document.querySelector("#summaryPanel"),
+  summaryContent: document.querySelector("#summaryContent"),
 };
 
 let state = {
@@ -57,19 +67,92 @@ function formatDate(dateString) {
   }).format(new Date(`${dateString}T12:00:00`));
 }
 
+function formatShortDate(dateString) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${dateString}T12:00:00`));
+}
+
+function getISOWeekNumber(dateString) {
+  const date = new Date(`${dateString}T12:00:00`);
+  const temp = new Date(date.getTime());
+  temp.setUTCDate(temp.getUTCDate() + 4 - (temp.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+  return Math.ceil(((temp - yearStart) / 86400000 + 1) / 7);
+}
+
 function buildSchedule(weekStart, people, startIndex) {
   const monday = new Date(`${weekStart}T12:00:00`);
-  return WEEKDAYS.map((day, index) => {
+  return WEEKDAYS.flatMap((day, dayIndex) => {
     const currentDate = new Date(monday);
     currentDate.setDate(monday.getDate() + day.offset);
-    const assignee = people[(startIndex + index) % people.length];
+    return SHIFTS.map((shift, shiftIndex) => {
+      const rotationIndex = dayIndex * SHIFTS.length + shiftIndex;
+      const assignee = people[(startIndex + rotationIndex) % people.length];
 
-    return {
-      dayLabel: day.label,
-      date: toInputDate(currentDate),
-      assignee,
-    };
+      return {
+        dayLabel: day.label,
+        date: toInputDate(currentDate),
+        shiftLabel: shift.label,
+        timeRange: shift.timeRange,
+        assignee,
+      };
+    });
   });
+}
+
+function isScheduleEntryValid(entry) {
+  return (
+    entry &&
+    typeof entry.dayLabel === "string" &&
+    typeof entry.date === "string" &&
+    typeof entry.shiftLabel === "string" &&
+    typeof entry.timeRange === "string" &&
+    typeof entry.assignee === "string"
+  );
+}
+
+function updateWeekCounter() {
+  const weekNum = getISOWeekNumber(state.weekStart);
+  const monday = new Date(`${state.weekStart}T12:00:00`);
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  elements.weekNumber.textContent = weekNum;
+  elements.weekDates.textContent =
+    `Du ${formatShortDate(state.weekStart)} au ${formatShortDate(toInputDate(friday))}`;
+  elements.weekBadgeText.textContent = `Semaine ${weekNum}`;
+}
+
+function renderSummary() {
+  if (!state.schedule.length) {
+    elements.summaryPanel.hidden = true;
+    return;
+  }
+
+  const counts = {};
+  state.schedule.forEach((entry) => {
+    counts[entry.assignee] = (counts[entry.assignee] || 0) + 1;
+  });
+
+  elements.summaryContent.innerHTML = "";
+
+  Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([name, count]) => {
+      const card = document.createElement("div");
+      card.className = "summary-card";
+      card.innerHTML =
+        `<span class="summary-card-name">${name}</span>` +
+        `<span class="summary-card-count">` +
+        `<i class="material-icons">access_time</i> ${count} creneau${count > 1 ? "x" : ""}` +
+        `</span>`;
+      elements.summaryContent.appendChild(card);
+    });
+
+  elements.summaryPanel.hidden = false;
 }
 
 function renderSchedule() {
@@ -82,11 +165,21 @@ function renderSchedule() {
   }
 
   const people = state.people;
+  let previousDay = "";
 
   state.schedule.forEach((entry, rowIndex) => {
     const row = elements.rowTemplate.content.firstElementChild.cloneNode(true);
+
+    // Visual separator between days
+    if (entry.dayLabel !== previousDay && rowIndex > 0) {
+      row.classList.add("day-start");
+    }
+    previousDay = entry.dayLabel;
+
     row.querySelector('[data-cell="day"]').textContent = entry.dayLabel;
     row.querySelector('[data-cell="date"]').textContent = formatDate(entry.date);
+    row.querySelector('[data-cell="shift"]').textContent = entry.shiftLabel;
+    row.querySelector('[data-cell="timeRange"]').textContent = entry.timeRange;
 
     const select = row.querySelector('[data-cell="assignee"]');
     people.forEach((person) => {
@@ -100,6 +193,7 @@ function renderSchedule() {
     select.addEventListener("change", (event) => {
       state.schedule[rowIndex].assignee = event.target.value;
       persistState();
+      renderSummary();
       updateStatus("Planning mis a jour manuellement.");
     });
 
@@ -107,6 +201,8 @@ function renderSchedule() {
   });
 
   elements.exportButton.disabled = false;
+  updateWeekCounter();
+  renderSummary();
   updateStatus(`Planning genere pour la semaine du ${formatDate(state.weekStart)}.`);
 }
 
@@ -131,7 +227,9 @@ function loadState() {
 
   const parsedState = JSON.parse(savedState);
   const people = Array.isArray(parsedState.people) ? parsedState.people : state.people;
-  const schedule = Array.isArray(parsedState.schedule) ? parsedState.schedule : [];
+  const schedule = Array.isArray(parsedState.schedule)
+    ? parsedState.schedule.filter(isScheduleEntryValid)
+    : [];
   const weekStart = parsedState.weekStart || state.weekStart;
   const startIndex = Number.isInteger(parsedState.startIndex) ? parsedState.startIndex : 0;
   const nextPeople = people.length ? people : state.people;
@@ -151,6 +249,7 @@ function syncInputs() {
   elements.weekStart.value = state.weekStart;
   elements.startIndex.value = `${state.startIndex}`;
   elements.peopleInput.value = state.people.join("\n");
+  updateWeekCounter();
 }
 
 function generateSchedule() {
@@ -160,6 +259,7 @@ function generateSchedule() {
     updateStatus("Ajoutez au moins une personne pour generer le planning.");
     elements.scheduleBody.innerHTML = "";
     elements.exportButton.disabled = true;
+    elements.summaryPanel.hidden = true;
     return;
   }
 
@@ -199,9 +299,18 @@ function exportCsv() {
     return;
   }
 
+  const weekNum = getISOWeekNumber(state.weekStart);
   const rows = [
-    ["Jour", "Date", "Permanence"],
-    ...state.schedule.map((entry) => [entry.dayLabel, entry.date, entry.assignee]),
+    [`Planning de permanence - Semaine ${weekNum}`],
+    [],
+    ["Jour", "Date", "Creneau", "Horaire", "Permanence"],
+    ...state.schedule.map((entry) => [
+      entry.dayLabel,
+      entry.date,
+      entry.shiftLabel,
+      entry.timeRange,
+      entry.assignee,
+    ]),
   ];
 
   const csvContent = rows
@@ -212,16 +321,21 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `planning-permanence-${state.weekStart}.csv`;
+  link.download = `planning-permanence-S${weekNum}-${state.weekStart}.csv`;
   link.click();
   URL.revokeObjectURL(url);
 
   updateStatus("Export CSV termine.");
 }
 
+function printSchedule() {
+  window.print();
+}
+
 elements.generateButton.addEventListener("click", generateSchedule);
 elements.resetButton.addEventListener("click", resetState);
 elements.exportButton.addEventListener("click", exportCsv);
+elements.printButton.addEventListener("click", printSchedule);
 
 elements.weekStart.addEventListener("change", generateSchedule);
 elements.startIndex.addEventListener("change", generateSchedule);
