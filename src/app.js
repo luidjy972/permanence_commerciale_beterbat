@@ -22,6 +22,7 @@ const elements = {
   resetButton: document.querySelector("#resetButton"),
   exportButton: document.querySelector("#exportButton"),
   printButton: document.querySelector("#printButton"),
+  printAnnualButton: document.querySelector("#printAnnualButton"),
   scheduleBody: document.querySelector("#scheduleBody"),
   rowTemplate: document.querySelector("#rowTemplate"),
   statusText: document.querySelector("#statusText"),
@@ -455,6 +456,275 @@ function printSingleWeek() {
   window.print();
 }
 
+function getMonthLabel(monthIndex) {
+  const labels = [
+    "JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE",
+  ];
+  return labels[monthIndex] || "";
+}
+
+function groupWeeksByMonth(weeks) {
+  const months = new Map();
+  const vowelMonths = new Set([3, 7, 9]); // avril, aout, octobre
+
+  weeks.forEach((week) => {
+    const date = new Date(`${week.weekStart}T12:00:00`);
+    const key = `${date.getFullYear()}-${date.getMonth()}`;
+    if (!months.has(key)) {
+      const monthName = getMonthLabel(date.getMonth());
+      const prefix = vowelMonths.has(date.getMonth()) ? "MOIS D'" : "MOIS DE ";
+      months.set(key, {
+        year: date.getFullYear(),
+        monthIndex: date.getMonth(),
+        label: `${prefix}${monthName} ${date.getFullYear()}`,
+        weeks: [],
+      });
+    }
+    months.get(key).weeks.push(week);
+  });
+
+  return Array.from(months.values());
+}
+
+function getRepresentativeWeek(monthGroup) {
+  return monthGroup.weeks[0];
+}
+
+function getMonthOffPeople(monthGroup) {
+  const offSet = new Set();
+  monthGroup.weeks.forEach((week) => {
+    if (week.offPerson) {
+      offSet.add(week.offPerson);
+    }
+  });
+  return Array.from(offSet);
+}
+
+function buildAnnualPlanning() {
+  if (!state.people.length) {
+    return [];
+  }
+
+  const startDate = new Date(`${state.weekStart}T12:00:00`);
+  const startYear = startDate.getFullYear();
+  const jan1 = new Date(startYear, 0, 1);
+  const jan1Day = jan1.getDay();
+  const firstMonday = new Date(jan1);
+  const diff = jan1Day === 0 ? 1 : jan1Day === 1 ? 0 : 8 - jan1Day;
+  firstMonday.setDate(jan1.getDate() + diff);
+
+  const annualStart = toInputDate(firstMonday);
+  return buildPlanning(annualStart, state.people, state.startIndex, 52);
+}
+
+function buildMonthTableHtml(monthGroup) {
+  const week = getRepresentativeWeek(monthGroup);
+  const offPeople = getMonthOffPeople(monthGroup);
+  const tournantText = offPeople.length
+    ? `Tournants : ${offPeople.join(" & ")}`
+    : "";
+
+  const dayRows = WEEKDAYS.map((day) => {
+    const morningEntry = week.entries.find(
+      (e) => e.dayLabel === day.label && e.shiftLabel === "Matin",
+    );
+    const afternoonEntry = week.entries.find(
+      (e) => e.dayLabel === day.label && e.shiftLabel === "Apres-midi",
+    );
+
+    return (
+      `<tr>` +
+      `<td class="day-cell">${day.label.toUpperCase()}</td>` +
+      `<td class="person-cell">${morningEntry ? morningEntry.assignee : ""}</td>` +
+      `<td class="person-cell">${afternoonEntry ? afternoonEntry.assignee : ""}</td>` +
+      `</tr>`
+    );
+  }).join("");
+
+  const samediRow =
+    `<tr>` +
+    `<td class="day-cell">SAMEDI</td>` +
+    `<td class="rdv-cell" colspan="2">SUR RENDEZ-VOUS</td>` +
+    `</tr>`;
+
+  return (
+    `<div class="month-block">` +
+    `<div class="month-header">${monthGroup.label}</div>` +
+    `<table class="month-table">` +
+    `<thead>` +
+    `<tr>` +
+    `<th class="col-jour">JOURS</th>` +
+    `<th class="col-shift">MATIN<br><span class="shift-hours">de 8H00 a 13H00</span></th>` +
+    `<th class="col-shift">APRES-MIDI<br><span class="shift-hours">de 14H00 a 17H00</span></th>` +
+    `</tr>` +
+    `</thead>` +
+    `<tbody>` +
+    dayRows +
+    samediRow +
+    `</tbody>` +
+    `</table>` +
+    (tournantText
+      ? `<div class="month-footer">${tournantText}</div>`
+      : "") +
+    `</div>`
+  );
+}
+
+function printAnnualPlanning() {
+  if (!state.people.length) {
+    updateStatus("Ajoutez des personnes pour generer le planning annuel.");
+    return;
+  }
+
+  const annualWeeks = buildAnnualPlanning();
+  const months = groupWeeksByMonth(annualWeeks);
+  const startYear = months.length ? months[0].year : new Date().getFullYear();
+
+  const monthsHtml = months.map((m) => buildMonthTableHtml(m)).join("");
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>Planning Annuel ${startYear} — Beterbat</title>
+<style>
+@page {
+  size: landscape;
+  margin: 8mm;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9pt;
+  color: #000;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.page-title {
+  text-align: center;
+  font-size: 14pt;
+  font-weight: 700;
+  padding: 6px 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 3px solid #ce2642;
+  margin-bottom: 10px;
+  color: #272727;
+}
+.page-title span {
+  color: #ce2642;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, auto);
+  gap: 8px;
+  width: 100%;
+}
+.month-block {
+  border: 1.5px solid #6b6b6a;
+  border-radius: 4px;
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+.month-header {
+  background: #6b6b6a;
+  color: #fff;
+  font-weight: 700;
+  font-size: 8.5pt;
+  text-align: center;
+  padding: 4px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.month-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.month-table th,
+.month-table td {
+  border: 0.5px solid #ccc;
+  padding: 2px 4px;
+  text-align: center;
+  font-size: 7.5pt;
+  line-height: 1.3;
+}
+.month-table th {
+  background: #ce2642;
+  color: #fff;
+  font-weight: 700;
+  font-size: 7pt;
+  text-transform: uppercase;
+  padding: 3px 4px;
+}
+.shift-hours {
+  font-weight: 400;
+  font-size: 6.5pt;
+  opacity: 0.9;
+}
+.col-jour {
+  width: 28%;
+}
+.col-shift {
+  width: 36%;
+}
+.day-cell {
+  font-weight: 700;
+  text-align: left;
+  padding-left: 6px;
+  background: #f5f5f4;
+}
+.person-cell {
+  font-weight: 400;
+  font-size: 7.5pt;
+}
+.rdv-cell {
+  font-style: italic;
+  font-size: 7pt;
+  color: #6b6b6a;
+}
+.month-footer {
+  text-align: center;
+  font-size: 7pt;
+  font-weight: 700;
+  padding: 3px 4px;
+  background: rgba(206,38,66,0.08);
+  color: #ce2642;
+  border-top: 1px solid #ddd;
+}
+.page-footer {
+  text-align: center;
+  font-size: 7pt;
+  color: #6b6b6a;
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #ddd;
+}
+</style>
+</head>
+<body>
+<div class="page-title">
+  Planning des permanences du service commercial <span>annee ${startYear}</span>
+</div>
+<div class="grid">
+${monthsHtml}
+</div>
+<div class="page-footer">
+  &copy; ${startYear} Maisons Beterbat — Planning genere automatiquement
+</div>
+<script>window.onload=function(){window.print();};</script>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+}
+
 function createWeekGroupRow(week) {
   const row = document.createElement("tr");
   row.className = "week-group";
@@ -749,6 +1019,7 @@ elements.generateButton.addEventListener("click", generatePlanning);
 elements.resetButton.addEventListener("click", resetState);
 elements.exportButton.addEventListener("click", exportCsv);
 elements.printButton.addEventListener("click", printSchedule);
+elements.printAnnualButton.addEventListener("click", printAnnualPlanning);
 elements.prevWeekBtn.addEventListener("click", () => navigateWeek(-1));
 elements.nextWeekBtn.addEventListener("click", () => navigateWeek(1));
 elements.viewAllBtn.addEventListener("click", viewAllWeeks);
