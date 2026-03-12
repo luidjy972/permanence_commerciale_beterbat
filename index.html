@@ -29,20 +29,23 @@
           <span class="nav-title">Planning de permanence hebdomadaire</span>
           <div id="weekBadge" class="week-badge" aria-live="polite">
             <i class="material-icons">date_range</i>
-            <span id="weekBadgeText">Semaine —</span>
+            <span id="weekBadgeText">Semaines —</span>
           </div>
         </div>
       </nav>
     </header>
 
     <main class="container layout">
-      <!-- Week counter -->
+      <!-- Planning counter -->
       <section class="week-counter" id="weekCounter">
         <div class="week-counter-number">
-          <span class="week-counter-label">Semaine</span>
-          <span class="week-counter-value" id="weekNumber">—</span>
+          <span class="week-counter-label">Periode</span>
+          <span class="week-counter-value" id="planningRangeValue">—</span>
         </div>
-        <div class="week-counter-dates" id="weekDates">—</div>
+        <div class="week-counter-content">
+          <div class="week-counter-dates" id="planningDates">—</div>
+          <div class="week-counter-meta" id="planningMeta">Renseignez la periode a planifier.</div>
+        </div>
       </section>
 
       <!-- Controls -->
@@ -53,12 +56,25 @@
 
         <div class="controls-grid">
           <div class="field">
-            <label for="weekStart">Lundi de la semaine</label>
+            <label for="weekStart">Lundi de depart</label>
             <input id="weekStart" name="weekStart" type="date" />
           </div>
 
           <div class="field">
-            <label for="startIndex">Index de depart</label>
+            <label for="planningWeeks">Nombre de semaines</label>
+            <input
+              id="planningWeeks"
+              name="planningWeeks"
+              type="number"
+              min="1"
+              max="26"
+              value="12"
+            />
+            <small>12 semaines correspondent a environ 3 mois.</small>
+          </div>
+
+          <div class="field">
+            <label for="startIndex">Premier commercial de repos</label>
             <input
               id="startIndex"
               name="startIndex"
@@ -66,7 +82,7 @@
               min="0"
               value="0"
             />
-            <small>0 = premiere personne de la liste.</small>
+            <small>0 = premiere personne absente sur la premiere semaine.</small>
           </div>
 
           <div class="field field--full">
@@ -78,6 +94,7 @@
               spellcheck="false"
               placeholder="Une personne par ligne&#10;Alice&#10;Benoit&#10;Chloe"
             ></textarea>
+            <small>Avec 6 commerciaux, un commercial de repos tourne automatiquement chaque semaine.</small>
           </div>
         </div>
 
@@ -105,11 +122,43 @@
         <div id="summaryContent" class="summary-grid"></div>
       </section>
 
+      <section class="panel rotation" id="rotationPanel" hidden>
+        <h2 class="panel-title">
+          <i class="material-icons">event_repeat</i> Rotation hebdomadaire
+        </h2>
+        <div id="rotationContent" class="rotation-grid"></div>
+      </section>
+
+      <!-- Week navigator -->
+      <section class="week-nav no-print" id="weekNav" hidden>
+        <button id="prevWeekBtn" type="button" class="week-nav-arrow" title="Semaine precedente">
+          <i class="material-icons">chevron_left</i>
+        </button>
+        <div class="week-nav-center">
+          <span id="weekNavLabel" class="week-nav-label">Toutes les semaines</span>
+          <span id="weekNavDates" class="week-nav-dates"></span>
+        </div>
+        <button id="nextWeekBtn" type="button" class="week-nav-arrow" title="Semaine suivante">
+          <i class="material-icons">chevron_right</i>
+        </button>
+        <div class="week-nav-actions">
+          <button id="viewAllBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">view_list</i> Tout afficher
+          </button>
+          <button id="exportWeekCsvBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">file_download</i> CSV semaine
+          </button>
+          <button id="printWeekBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">print</i> Imprimer semaine
+          </button>
+        </div>
+      </section>
+
       <!-- Schedule table -->
       <section class="panel schedule-panel">
         <div class="panel-heading">
           <h2 class="panel-title">
-            <i class="material-icons">event_note</i> Planning de la semaine
+            <i class="material-icons">event_note</i> Planning de la periode
           </h2>
           <p id="statusText" class="status">
             Renseignez les personnes puis generez le planning.
