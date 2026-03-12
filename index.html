@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planning de permanence hebdomadaire</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="hero">
+        <p class="eyebrow">Organisation interne</p>
+        <h1>Planning de permanence hebdomadaire</h1>
+        <p class="lead">
+          Generez rapidement une rotation sur la semaine, ajustez les
+          affectations si besoin, puis exportez le resultat en CSV.
+        </p>
+      </section>
+
+      <section class="panel controls">
+        <div class="field">
+          <label for="weekStart">Lundi de la semaine</label>
+          <input id="weekStart" name="weekStart" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="startIndex">Index de depart</label>
+          <input
+            id="startIndex"
+            name="startIndex"
+            type="number"
+            min="0"
+            value="0"
+          />
+          <small>0 = premiere personne de la liste.</small>
+        </div>
+
+        <div class="field field--full">
+          <label for="peopleInput">Personnes de permanence</label>
+          <textarea
+            id="peopleInput"
+            name="peopleInput"
+            rows="8"
+            spellcheck="false"
+            placeholder="Une personne par ligne&#10;Alice&#10;Benoit&#10;Chloe"
+          ></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="generateButton" type="button">Generer le planning</button>
+          <button id="resetButton" type="button" class="button-secondary">
+            Reinitialiser
+          </button>
+          <button id="exportButton" type="button" class="button-secondary">
+            Exporter en CSV
+          </button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Semaine planifiee</h2>
+          <p id="statusText" class="status">
+            Renseignez les personnes puis generez le planning.
+          </p>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Jour</th>
+                <th>Date</th>
+                <th>Permanence</th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <template id="rowTemplate">
+      <tr>
+        <td data-cell="day"></td>
+        <td data-cell="date"></td>
+        <td>
+          <select data-cell="assignee"></select>
+        </td>
+      </tr>
+    </template>
+
+    <script src="src/app.js"></script>
+  </body>
+</html>
