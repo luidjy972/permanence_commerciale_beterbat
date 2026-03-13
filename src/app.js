@@ -435,6 +435,13 @@ function renderRotation() {
     return;
   }
 
+  const rotationTitle = document.querySelector("#rotationTitle");
+  if (rotationTitle) {
+    rotationTitle.textContent = state.rotationMode === "monthly"
+      ? "Rotation mensuelle"
+      : "Rotation hebdomadaire";
+  }
+
   elements.rotationContent.innerHTML = "";
 
   weeksWithOffPerson.forEach((week) => {
@@ -480,6 +487,7 @@ function updateWeekNav() {
     elements.viewAllBtn.disabled = true;
     elements.exportWeekCsvBtn.disabled = true;
     elements.printWeekBtn.disabled = true;
+    elements.weekSelector.value = "";
   } else {
     const week = state.planning[state.viewWeekIndex];
     const offText = week.offPerson ? ` — Repos : ${week.offPerson}` : "";
@@ -493,6 +501,7 @@ function updateWeekNav() {
     elements.viewAllBtn.disabled = false;
     elements.exportWeekCsvBtn.disabled = false;
     elements.printWeekBtn.disabled = false;
+    elements.weekSelector.value = `${week.weekNumber}`;
   }
 }
 
