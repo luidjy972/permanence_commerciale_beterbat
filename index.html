@@ -48,6 +48,39 @@
         </div>
       </section>
 
+      <!-- Commercial Management Module -->
+      <section class="panel commercials-panel no-print">
+        <div class="panel-heading">
+          <h2 class="panel-title">
+            <i class="material-icons">people</i> Gestion des commerciaux
+          </h2>
+          <button id="toggleCommercialsBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">expand_more</i> Afficher
+          </button>
+        </div>
+        <div id="commercialsModule" hidden>
+          <div class="commercials-table-wrapper">
+            <table class="commercials-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Agence</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="commercialsBody"></tbody>
+            </table>
+          </div>
+          <div class="commercial-add-form">
+            <input id="commercialName" type="text" placeholder="Nom du commercial" />
+            <input id="commercialAgency" type="text" placeholder="Agence" />
+            <button id="addCommercialBtn" type="button" class="btn btn-primary btn-sm">
+              <i class="material-icons">person_add</i> Ajouter
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- Controls -->
       <section class="panel controls">
         <h2 class="panel-title">
@@ -75,26 +108,25 @@
 
           <div class="field">
             <label for="startIndex">Premier commercial de repos</label>
-            <input
-              id="startIndex"
-              name="startIndex"
-              type="number"
-              min="0"
-              value="0"
-            />
-            <small>0 = premiere personne absente sur la premiere semaine.</small>
+            <select id="startIndex" name="startIndex"></select>
+            <small>Commercial absent la premiere semaine.</small>
           </div>
 
-          <div class="field field--full">
-            <label for="peopleInput">Personnes de permanence</label>
-            <textarea
-              id="peopleInput"
-              name="peopleInput"
-              rows="6"
-              spellcheck="false"
-              placeholder="Une personne par ligne&#10;Alice&#10;Benoit&#10;Chloe"
-            ></textarea>
-            <small>Avec 6 commerciaux, un commercial de repos tourne automatiquement chaque semaine.</small>
+          <div class="field">
+            <label for="rotationMode">Mode de rotation</label>
+            <select id="rotationMode" name="rotationMode">
+              <option value="weekly">Hebdomadaire</option>
+              <option value="monthly">Mensuel (toutes les 4 semaines)</option>
+            </select>
+            <small>Frequence de changement du commercial de repos.</small>
+          </div>
+
+          <div class="field">
+            <label for="weekSelector">Voir une semaine</label>
+            <select id="weekSelector" name="weekSelector">
+              <option value="">Toutes les semaines</option>
+            </select>
+            <small>Selectionnez une semaine pour l'afficher.</small>
           </div>
         </div>
 

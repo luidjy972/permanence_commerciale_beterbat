@@ -1,6 +1,14 @@
 const STORAGE_KEY = "weekly-duty-schedule-state";
+const COMMERCIALS_STORAGE_KEY = "weekly-duty-commercials";
 const DEFAULT_PLANNING_WEEKS = 12;
-const DEFAULT_PEOPLE = ["Alice", "Benoit", "Chloe", "David", "Emma", "Farid"];
+const DEFAULT_COMMERCIALS = [
+  { name: "Marie-Line COPPET", agency: "Fort-de-France" },
+  { name: "Stephane LUREL", agency: "Le Lamentin" },
+  { name: "Fabienne MARDAYE", agency: "Ducos" },
+  { name: "Jean-Marc ROSALIE", agency: "Le Robert" },
+  { name: "Nathalie SYMPHOR", agency: "Sainte-Anne" },
+  { name: "Patrick DORLEAN", agency: "Trinite" },
+];
 const WEEKDAYS = [
   { label: "Lundi", offset: 0 },
   { label: "Mardi", offset: 1 },
@@ -17,7 +25,7 @@ const elements = {
   weekStart: document.querySelector("#weekStart"),
   planningWeeks: document.querySelector("#planningWeeks"),
   startIndex: document.querySelector("#startIndex"),
-  peopleInput: document.querySelector("#peopleInput"),
+  rotationMode: document.querySelector("#rotationMode"),
   generateButton: document.querySelector("#generateButton"),
   resetButton: document.querySelector("#resetButton"),
   exportButton: document.querySelector("#exportButton"),
@@ -42,16 +50,111 @@ const elements = {
   viewAllBtn: document.querySelector("#viewAllBtn"),
   exportWeekCsvBtn: document.querySelector("#exportWeekCsvBtn"),
   printWeekBtn: document.querySelector("#printWeekBtn"),
+  weekSelector: document.querySelector("#weekSelector"),
+  commercialsBody: document.querySelector("#commercialsBody"),
+  commercialName: document.querySelector("#commercialName"),
+  commercialAgency: document.querySelector("#commercialAgency"),
+  addCommercialBtn: document.querySelector("#addCommercialBtn"),
+  toggleCommercialsBtn: document.querySelector("#toggleCommercialsBtn"),
+  commercialsModule: document.querySelector("#commercialsModule"),
 };
+
+let commercials = loadCommercials();
 
 let state = {
   weekStart: getDefaultMonday(),
   planningWeeks: DEFAULT_PLANNING_WEEKS,
   startIndex: 0,
-  people: DEFAULT_PEOPLE,
+  rotationMode: "weekly",
+  people: commercials.map((c) => c.name),
   planning: [],
   viewWeekIndex: null,
 };
+
+function loadCommercials() {
+  const saved = localStorage.getItem(COMMERCIALS_STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed) && parsed.length && parsed.every((c) => c && typeof c.name === "string")) {
+      return parsed;
+    }
+  }
+  return DEFAULT_COMMERCIALS.slice();
+}
+
+function saveCommercials() {
+  localStorage.setItem(COMMERCIALS_STORAGE_KEY, JSON.stringify(commercials));
+}
+
+function renderCommercials() {
+  elements.commercialsBody.innerHTML = "";
+  commercials.forEach((commercial, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML =
+      `<td>${commercial.name}</td>` +
+      `<td>${commercial.agency}</td>` +
+      `<td class="commercial-actions">` +
+      `<button type="button" class="btn-icon btn-icon-delete" data-index="${index}" title="Supprimer">` +
+      `<i class="material-icons">delete</i>` +
+      `</button>` +
+      `</td>`;
+
+    const deleteBtn = row.querySelector(".btn-icon-delete");
+    deleteBtn.addEventListener("click", () => {
+      removeCommercial(index);
+    });
+
+    elements.commercialsBody.appendChild(row);
+  });
+
+  syncStartIndexOptions();
+}
+
+function addCommercial() {
+  const name = elements.commercialName.value.trim();
+  const agency = elements.commercialAgency.value.trim();
+
+  if (!name) {
+    return;
+  }
+
+  commercials.push({ name, agency: agency || "" });
+  saveCommercials();
+  elements.commercialName.value = "";
+  elements.commercialAgency.value = "";
+  renderCommercials();
+}
+
+function removeCommercial(index) {
+  if (commercials.length <= 1) {
+    return;
+  }
+  commercials.splice(index, 1);
+  saveCommercials();
+  renderCommercials();
+}
+
+function syncStartIndexOptions() {
+  const currentValue = elements.startIndex.value;
+  elements.startIndex.innerHTML = "";
+  commercials.forEach((commercial, index) => {
+    const option = document.createElement("option");
+    option.value = `${index}`;
+    option.textContent = commercial.name;
+    if (`${index}` === currentValue) {
+      option.selected = true;
+    }
+    elements.startIndex.appendChild(option);
+  });
+}
+
+function toggleCommercialsModule() {
+  const module = elements.commercialsModule;
+  const isHidden = module.hidden;
+  module.hidden = !isHidden;
+  elements.toggleCommercialsBtn.querySelector(".material-icons").textContent =
+    isHidden ? "expand_less" : "expand_more";
+}
 
 function getDefaultMonday() {
   const today = new Date();
@@ -169,12 +272,22 @@ function buildWeekEntries(week, weekOffset) {
   });
 }
 
-function buildPlanning(weekStart, people, startIndex, planningWeeks) {
+function buildPlanning(weekStart, people, startIndex, planningWeeks, rotationMode) {
   return Array.from({ length: planningWeeks }, (_, weekOffset) => {
     const currentWeekStart = addDays(weekStart, weekOffset * 7);
     const currentWeekEnd = addDays(currentWeekStart, 4);
     const weekNumber = getISOWeekNumber(currentWeekStart);
-    const offPersonIndex = people.length > 5 ? (startIndex + weekOffset) % people.length : -1;
+
+    let offPersonIndex = -1;
+    if (people.length > 5) {
+      if (rotationMode === "monthly") {
+        const monthOffset = Math.floor(weekOffset / 4);
+        offPersonIndex = (startIndex + monthOffset) % people.length;
+      } else {
+        offPersonIndex = (startIndex + weekOffset) % people.length;
+      }
+    }
+
     const offPerson = offPersonIndex === -1 ? "" : people[offPersonIndex];
     const activePeople =
       offPersonIndex === -1
@@ -515,7 +628,7 @@ function buildAnnualPlanning() {
   firstMonday.setDate(jan1.getDate() + diff);
 
   const annualStart = toInputDate(firstMonday);
-  return buildPlanning(annualStart, state.people, state.startIndex, 52);
+  return buildPlanning(annualStart, state.people, state.startIndex, 52, state.rotationMode);
 }
 
 function buildMonthTableHtml(monthGroup) {
@@ -828,6 +941,7 @@ function renderPlanning() {
   elements.exportButton.disabled = false;
   updatePlanningCounter();
   updateWeekNav();
+  updateWeekSelectorOptions();
   renderSummary();
   renderRotation();
 
@@ -866,6 +980,7 @@ function loadState() {
       state.people,
       state.startIndex,
       state.planningWeeks,
+      state.rotationMode,
     );
     renderPlanning();
     persistState();
@@ -880,16 +995,18 @@ function loadState() {
   const weekStart = parsedState.weekStart || state.weekStart;
   const planningWeeks = normalizePlanningWeeks(parsedState.planningWeeks);
   const startIndex = getSafeStartIndex(parsedState.startIndex, nextPeople.length);
+  const rotationMode = parsedState.rotationMode === "monthly" ? "monthly" : "weekly";
   const planning = Array.isArray(parsedState.planning) && parsedState.planning.every(isPlanningWeekValid)
     ? parsedState.planning
     : nextPeople.length
-      ? buildPlanning(weekStart, nextPeople, startIndex, planningWeeks)
+      ? buildPlanning(weekStart, nextPeople, startIndex, planningWeeks, rotationMode)
       : [];
 
   state = {
     weekStart,
     planningWeeks,
     startIndex,
+    rotationMode,
     people: nextPeople,
     planning,
     viewWeekIndex: null,
@@ -903,21 +1020,24 @@ function syncInputs() {
   elements.weekStart.value = state.weekStart;
   elements.planningWeeks.value = `${state.planningWeeks}`;
   elements.startIndex.value = `${state.startIndex}`;
-  elements.peopleInput.value = state.people.join("\n");
+  elements.rotationMode.value = state.rotationMode;
+  syncStartIndexOptions();
   updatePlanningCounter();
 }
 
 function generatePlanning() {
-  const people = parsePeople(elements.peopleInput.value);
+  const people = commercials.map((c) => c.name);
   const weekStart = elements.weekStart.value || getDefaultMonday();
   const planningWeeks = normalizePlanningWeeks(elements.planningWeeks.value);
   const startIndex = getSafeStartIndex(elements.startIndex.value, people.length);
+  const rotationMode = elements.rotationMode.value === "monthly" ? "monthly" : "weekly";
 
   if (!people.length) {
     state = {
       weekStart,
       planningWeeks,
       startIndex: 0,
+      rotationMode,
       people: [],
       planning: [],
       viewWeekIndex: null,
@@ -933,8 +1053,9 @@ function generatePlanning() {
     weekStart,
     planningWeeks,
     startIndex,
+    rotationMode,
     people,
-    planning: buildPlanning(weekStart, people, startIndex, planningWeeks),
+    planning: buildPlanning(weekStart, people, startIndex, planningWeeks, rotationMode),
     viewWeekIndex: null,
   };
 
@@ -944,17 +1065,22 @@ function generatePlanning() {
 }
 
 function resetState() {
+  commercials = loadCommercials();
+  const people = commercials.map((c) => c.name);
+
   state = {
     weekStart: getDefaultMonday(),
     planningWeeks: DEFAULT_PLANNING_WEEKS,
     startIndex: 0,
-    people: DEFAULT_PEOPLE,
+    rotationMode: "weekly",
+    people,
     planning: [],
     viewWeekIndex: null,
   };
 
   syncInputs();
-  state.planning = buildPlanning(state.weekStart, state.people, state.startIndex, state.planningWeeks);
+  renderCommercials();
+  state.planning = buildPlanning(state.weekStart, state.people, state.startIndex, state.planningWeeks, state.rotationMode);
   renderPlanning();
   persistState();
 }
@@ -1015,6 +1141,32 @@ function printSchedule() {
   window.print();
 }
 
+function jumpToWeek() {
+  const weekNum = Number.parseInt(elements.weekSelector.value, 10);
+  if (Number.isNaN(weekNum)) {
+    viewAllWeeks();
+    return;
+  }
+  const index = state.planning.findIndex((w) => w.weekNumber === weekNum);
+  if (index !== -1) {
+    viewSingleWeek(index);
+  }
+}
+
+function updateWeekSelectorOptions() {
+  const current = elements.weekSelector.value;
+  elements.weekSelector.innerHTML = '<option value="">Toutes les semaines</option>';
+  state.planning.forEach((week) => {
+    const option = document.createElement("option");
+    option.value = `${week.weekNumber}`;
+    option.textContent = `Semaine ${week.weekNumber}`;
+    if (`${week.weekNumber}` === current) {
+      option.selected = true;
+    }
+    elements.weekSelector.appendChild(option);
+  });
+}
+
 elements.generateButton.addEventListener("click", generatePlanning);
 elements.resetButton.addEventListener("click", resetState);
 elements.exportButton.addEventListener("click", exportCsv);
@@ -1025,19 +1177,14 @@ elements.nextWeekBtn.addEventListener("click", () => navigateWeek(1));
 elements.viewAllBtn.addEventListener("click", viewAllWeeks);
 elements.exportWeekCsvBtn.addEventListener("click", exportWeekCsv);
 elements.printWeekBtn.addEventListener("click", printSingleWeek);
+elements.addCommercialBtn.addEventListener("click", addCommercial);
+elements.toggleCommercialsBtn.addEventListener("click", toggleCommercialsModule);
+elements.weekSelector.addEventListener("change", jumpToWeek);
+elements.rotationMode.addEventListener("change", generatePlanning);
 
 elements.weekStart.addEventListener("change", generatePlanning);
 elements.planningWeeks.addEventListener("change", generatePlanning);
 elements.startIndex.addEventListener("change", generatePlanning);
-elements.peopleInput.addEventListener("blur", () => {
-  const people = parsePeople(elements.peopleInput.value);
-  const hasChanged =
-    people.length !== state.people.length ||
-    people.some((person, index) => person !== state.people[index]);
 
-  if (hasChanged) {
-    generatePlanning();
-  }
-});
-
+renderCommercials();
 loadState();
