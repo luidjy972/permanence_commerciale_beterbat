@@ -3,11 +3,11 @@ const COMMERCIALS_STORAGE_KEY = "weekly-duty-commercials";
 const DEFAULT_PLANNING_WEEKS = 12;
 const DEFAULT_COMMERCIALS = [
   { name: "Marie-Line COPPET", agency: "Fort-de-France" },
-  { name: "Stephane LUREL", agency: "Le Lamentin" },
+  { name: "Stéphane LUREL", agency: "Le Lamentin" },
   { name: "Fabienne MARDAYE", agency: "Ducos" },
   { name: "Jean-Marc ROSALIE", agency: "Le Robert" },
   { name: "Nathalie SYMPHOR", agency: "Sainte-Anne" },
-  { name: "Patrick DORLEAN", agency: "Trinite" },
+  { name: "Patrick DORLEAN", agency: "Trinité" },
 ];
 const WEEKDAYS = [
   { label: "Lundi", offset: 0 },
@@ -115,6 +115,7 @@ function addCommercial() {
   const agency = elements.commercialAgency.value.trim();
 
   if (!name) {
+    updateStatus("Veuillez saisir le nom du commercial.");
     return;
   }
 
@@ -127,6 +128,7 @@ function addCommercial() {
 
 function removeCommercial(index) {
   if (commercials.length <= 1) {
+    updateStatus("Impossible de supprimer le dernier commercial.");
     return;
   }
   commercials.splice(index, 1);
