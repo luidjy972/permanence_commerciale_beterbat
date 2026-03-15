@@ -20,6 +20,20 @@ const SHIFTS = [
   { label: "Matin", timeRange: "8H00 - 13H00" },
   { label: "Apres-midi", timeRange: "14H00 - 17H00" },
 ];
+const COMMERCIAL_COLORS = [
+  "#FFD700",
+  "#FFA500",
+  "#FFB6C1",
+  "#90EE90",
+  "#ADD8E6",
+  "#DDA0DD",
+  "#F0E68C",
+  "#87CEEB",
+  "#FFC0CB",
+  "#98FB98",
+  "#F4A460",
+  "#B0E0E6",
+];
 
 const elements = {
   weekStart: document.querySelector("#weekStart"),
@@ -50,6 +64,7 @@ const elements = {
   viewAllBtn: document.querySelector("#viewAllBtn"),
   exportWeekCsvBtn: document.querySelector("#exportWeekCsvBtn"),
   printWeekBtn: document.querySelector("#printWeekBtn"),
+  printWeekTableBtn: document.querySelector("#printWeekTableBtn"),
   weekSelector: document.querySelector("#weekSelector"),
   commercialsBody: document.querySelector("#commercialsBody"),
   commercialName: document.querySelector("#commercialName"),
@@ -233,6 +248,14 @@ function getISOWeekNumber(dateString) {
   temp.setUTCDate(temp.getUTCDate() + 4 - (temp.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
   return Math.ceil(((temp - yearStart) / 86400000 + 1) / 7);
+}
+
+function getCommercialColor(name) {
+  const index = state.people.indexOf(name);
+  if (index === -1) {
+    return "#FFFFFF";
+  }
+  return COMMERCIAL_COLORS[index % COMMERCIAL_COLORS.length];
 }
 
 function normalizePlanningWeeks(value) {
@@ -512,6 +535,7 @@ function updateWeekNav() {
     elements.viewAllBtn.disabled = true;
     elements.exportWeekCsvBtn.disabled = true;
     elements.printWeekBtn.disabled = true;
+    elements.printWeekTableBtn.disabled = true;
     elements.weekSelector.value = "";
   } else {
     const week = state.planning[state.viewWeekIndex];
@@ -526,6 +550,7 @@ function updateWeekNav() {
     elements.viewAllBtn.disabled = false;
     elements.exportWeekCsvBtn.disabled = false;
     elements.printWeekBtn.disabled = false;
+    elements.printWeekTableBtn.disabled = false;
     elements.weekSelector.value = `${week.weekNumber}`;
   }
 }
@@ -601,6 +626,159 @@ function printSingleWeek() {
   }
 
   window.print();
+}
+
+function printWeekTable() {
+  if (state.viewWeekIndex === null || !state.planning.length) {
+    return;
+  }
+
+  const week = state.planning[state.viewWeekIndex];
+  const weekStartDate = new Date(`${week.weekStart}T12:00:00`);
+  const monthIndex = weekStartDate.getMonth();
+  const year = weekStartDate.getFullYear();
+  const vowelMonths = new Set([3, 7, 9]);
+  const monthLabels = [
+    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE",
+  ];
+  const monthName = monthLabels[monthIndex] || "";
+  const prefix = vowelMonths.has(monthIndex) ? "MOIS D'" : "MOIS DE ";
+  const titleText = `${prefix}${monthName} ${year}`;
+
+  const dayRows = WEEKDAYS.map((day) => {
+    const morningEntry = week.entries.find(
+      (e) => e.dayLabel === day.label && e.shiftLabel === "Matin",
+    );
+    const afternoonEntry = week.entries.find(
+      (e) => e.dayLabel === day.label && e.shiftLabel === "Apres-midi",
+    );
+    const morningName = morningEntry ? morningEntry.assignee : "";
+    const afternoonName = afternoonEntry ? afternoonEntry.assignee : "";
+    const morningColor = morningName ? getCommercialColor(morningName) : "#FFFFFF";
+    const afternoonColor = afternoonName ? getCommercialColor(afternoonName) : "#FFFFFF";
+
+    return (
+      `<tr>` +
+      `<td class="day-cell">${day.label.toUpperCase()}</td>` +
+      `<td class="person-cell" style="background-color:${morningColor};">${morningName}</td>` +
+      `<td class="person-cell" style="background-color:${afternoonColor};">${afternoonName}</td>` +
+      `</tr>`
+    );
+  }).join("");
+
+  const samediRow =
+    `<tr>` +
+    `<td class="day-cell">SAMEDI</td>` +
+    `<td class="rdv-cell" colspan="2">SUR RENDEZ-VOUS</td>` +
+    `</tr>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>Planning Semaine ${week.weekNumber} — Beterbat</title>
+<style>
+@page {
+  size: landscape;
+  margin: 15mm;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12pt;
+  color: #000;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.table-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 40px auto;
+}
+.week-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #c0c0c0;
+  border: 2px solid #999;
+}
+.week-table th,
+.week-table td {
+  border: 1px solid #999;
+  padding: 10px 14px;
+  font-size: 12pt;
+  line-height: 1.4;
+}
+.title-cell {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13pt;
+  text-decoration: underline;
+  background: #c0c0c0;
+}
+.header-jour {
+  text-align: left;
+  font-weight: 700;
+  font-size: 12pt;
+  background: #c0c0c0;
+  vertical-align: middle;
+}
+.header-shift {
+  text-align: center;
+  font-weight: 700;
+  font-size: 12pt;
+  background: #c0c0c0;
+}
+.day-cell {
+  font-weight: 400;
+  text-align: left;
+  padding-left: 14px;
+  background: #c0c0c0;
+  width: 18%;
+}
+.person-cell {
+  font-weight: 400;
+  font-size: 12pt;
+  padding: 10px 14px;
+  width: 41%;
+}
+.rdv-cell {
+  text-align: center;
+  font-weight: 700;
+  font-size: 12pt;
+  background: #c0c0c0;
+}
+</style>
+</head>
+<body>
+<div class="table-container">
+  <table class="week-table">
+    <thead>
+      <tr>
+        <th class="header-jour" rowspan="2">JOURS</th>
+        <th class="title-cell" colspan="2">${titleText}</th>
+      </tr>
+      <tr>
+        <th class="header-shift">MATIN &nbsp; de 8h30 à 13h00</th>
+        <th class="header-shift">SOIR de 13h00 à 17h00</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${dayRows}
+      ${samediRow}
+    </tbody>
+  </table>
+</div>
+<script>window.onload=function(){window.print();};<\/script>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
 }
 
 function getMonthLabel(monthIndex) {
@@ -1293,6 +1471,7 @@ elements.nextWeekBtn.addEventListener("click", () => navigateWeek(1));
 elements.viewAllBtn.addEventListener("click", viewAllWeeks);
 elements.exportWeekCsvBtn.addEventListener("click", exportWeekCsv);
 elements.printWeekBtn.addEventListener("click", printSingleWeek);
+elements.printWeekTableBtn.addEventListener("click", printWeekTable);
 elements.addCommercialBtn.addEventListener("click", addCommercial);
 elements.toggleCommercialsBtn.addEventListener("click", toggleCommercialsModule);
 elements.toggleParametresBtn.addEventListener("click", toggleParametresModule);
