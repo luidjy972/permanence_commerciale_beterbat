@@ -417,6 +417,25 @@ small {
   margin-bottom: 6px;
 }
 
+.rotation-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.rotation-card-header .rotation-card-name {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.rotation-card-note {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .rotation-card-dates {
   display: block;
   font-size: 0.8125rem;
@@ -537,6 +556,13 @@ tr.week-group td {
 
 .btn-week-view {
   flex-shrink: 0;
+}
+
+/* ===== Schedule Panel Actions ===== */
+.schedule-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 
 /* ===== Week Navigator ===== */

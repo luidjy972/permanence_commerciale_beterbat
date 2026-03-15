@@ -61,6 +61,7 @@ const elements = {
   parametresModule: document.querySelector("#parametresModule"),
   toggleRecapitulatifBtn: document.querySelector("#toggleRecapitulatifBtn"),
   recapitulatifModule: document.querySelector("#recapitulatifModule"),
+  printPeriodBtn: document.querySelector("#printPeriodBtn"),
 };
 
 let commercials = loadCommercials();
@@ -470,7 +471,10 @@ function renderRotation() {
     card.className = "rotation-card";
     card.innerHTML =
       `<span class="rotation-card-week">Semaine ${week.weekNumber}</span>` +
+      `<div class="rotation-card-header">` +
       `<span class="rotation-card-name">${week.offPerson}</span>` +
+      `<span class="rotation-card-note">Le commercial ${week.offPerson} est en rotation de repos et ne sera pas présent en permanence cette semaine.</span>` +
+      `</div>` +
       `<span class="rotation-card-dates">` +
       `Du ${formatShortDate(week.weekStart)} au ${formatShortDate(week.weekEnd)}` +
       `</span>`;
@@ -1171,6 +1175,88 @@ function printSchedule() {
   window.print();
 }
 
+function printPeriodPlanning() {
+  if (!state.planning.length) {
+    return;
+  }
+
+  const visibleWeeks = getVisibleWeeks();
+  const firstWeek = visibleWeeks[0];
+  const lastWeek = visibleWeeks[visibleWeeks.length - 1];
+
+  const offPersonLines = visibleWeeks
+    .filter((w) => w.offPerson)
+    .map((w) => `<p style="margin:2px 0;"><strong>Semaine ${w.weekNumber}</strong> — Commercial de repos : ${w.offPerson}</p>`)
+    .join("");
+
+  let tableRows = "";
+  visibleWeeks.forEach((week) => {
+    tableRows +=
+      `<tr style="background:#f0f0f0;">` +
+      `<td colspan="5" style="padding:10px 8px;font-weight:700;font-size:0.9em;border:1px solid #999;">` +
+      `Semaine ${week.weekNumber} — Du ${formatShortDate(week.weekStart)} au ${formatShortDate(week.weekEnd)}` +
+      (week.offPerson ? ` — Commercial de repos : ${week.offPerson}` : "") +
+      `</td></tr>`;
+
+    let previousDay = "";
+    week.entries.forEach((entry, idx) => {
+      const borderTop = (entry.dayLabel !== previousDay && idx > 0)
+        ? "border-top:2px solid #666;"
+        : "";
+      previousDay = entry.dayLabel;
+      tableRows +=
+        `<tr style="${borderTop}">` +
+        `<td style="padding:8px;border:1px solid #ccc;font-weight:600;">${entry.dayLabel}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;">${formatDate(entry.date)}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;font-weight:600;color:#ce2642;">${entry.shiftLabel}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;color:#6b6b6a;">${entry.timeRange}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;font-weight:600;">${entry.assignee}</td>` +
+        `</tr>`;
+    });
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Planning de la période</title>
+<style>
+  body { font-family: "Open Sans", Arial, sans-serif; margin: 20px; color: #212529; }
+  h2 { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { text-align: left; padding: 10px 8px; font-size: 0.85em; color: #fff; background-color: #6b6b6a; text-transform: uppercase; letter-spacing: 0.03em; }
+  @media print { body { margin: 0; } }
+</style>
+</head>
+<body>
+  <h2>Planning de la période</h2>
+  <p style="color:#6b6b6a;font-size:0.9em;">Du ${formatShortDate(firstWeek.weekStart)} au ${formatShortDate(lastWeek.weekEnd)}</p>
+  ${offPersonLines ? `<div style="font-size:0.85em;color:#6b6b6a;margin-bottom:8px;">${offPersonLines}</div>` : ""}
+  <table>
+    <thead>
+      <tr>
+        <th>Jour</th>
+        <th>Date</th>
+        <th>Créneau</th>
+        <th>Horaire</th>
+        <th>Permanence</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+<script>window.onload=function(){window.print();};<\/script>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+}
+
 function jumpToWeek() {
   const weekNum = Number.parseInt(elements.weekSelector.value, 10);
   if (Number.isNaN(weekNum)) {
@@ -1213,6 +1299,7 @@ elements.toggleParametresBtn.addEventListener("click", toggleParametresModule);
 elements.toggleRecapitulatifBtn.addEventListener("click", toggleRecapitulatifModule);
 elements.weekSelector.addEventListener("change", jumpToWeek);
 elements.rotationMode.addEventListener("change", generatePlanning);
+elements.printPeriodBtn.addEventListener("click", printPeriodPlanning);
 
 elements.weekStart.addEventListener("change", generatePlanning);
 elements.planningWeeks.addEventListener("change", generatePlanning);
