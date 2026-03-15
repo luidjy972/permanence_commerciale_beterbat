@@ -419,8 +419,9 @@ small {
 
 .rotation-card-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 10px;
+  gap: 4px 10px;
   margin-bottom: 6px;
 }
 
@@ -430,6 +431,7 @@ small {
 }
 
 .rotation-card-note {
+  flex-basis: 100%;
   font-size: 0.75rem;
   font-style: italic;
   color: var(--text-secondary);
