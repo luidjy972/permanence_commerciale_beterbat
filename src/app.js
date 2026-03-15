@@ -57,6 +57,10 @@ const elements = {
   addCommercialBtn: document.querySelector("#addCommercialBtn"),
   toggleCommercialsBtn: document.querySelector("#toggleCommercialsBtn"),
   commercialsModule: document.querySelector("#commercialsModule"),
+  toggleParametresBtn: document.querySelector("#toggleParametresBtn"),
+  parametresModule: document.querySelector("#parametresModule"),
+  toggleRecapitulatifBtn: document.querySelector("#toggleRecapitulatifBtn"),
+  recapitulatifModule: document.querySelector("#recapitulatifModule"),
 };
 
 let commercials = loadCommercials();
@@ -156,6 +160,21 @@ function toggleCommercialsModule() {
   module.hidden = !isHidden;
   elements.toggleCommercialsBtn.querySelector(".material-icons").textContent =
     isHidden ? "expand_less" : "expand_more";
+}
+
+function toggleParametresModule() {
+  toggleModule(elements.parametresModule, elements.toggleParametresBtn);
+}
+
+function toggleRecapitulatifModule() {
+  toggleModule(elements.recapitulatifModule, elements.toggleRecapitulatifBtn);
+}
+
+function toggleModule(module, btn) {
+  const isHidden = module.hidden;
+  module.hidden = !isHidden;
+  btn.querySelector(".material-icons").textContent = isHidden ? "expand_less" : "expand_more";
+  btn.querySelector("span").textContent = isHidden ? "Masquer" : "Afficher";
 }
 
 function getDefaultMonday() {
@@ -1190,6 +1209,8 @@ elements.exportWeekCsvBtn.addEventListener("click", exportWeekCsv);
 elements.printWeekBtn.addEventListener("click", printSingleWeek);
 elements.addCommercialBtn.addEventListener("click", addCommercial);
 elements.toggleCommercialsBtn.addEventListener("click", toggleCommercialsModule);
+elements.toggleParametresBtn.addEventListener("click", toggleParametresModule);
+elements.toggleRecapitulatifBtn.addEventListener("click", toggleRecapitulatifModule);
 elements.weekSelector.addEventListener("change", jumpToWeek);
 elements.rotationMode.addEventListener("change", generatePlanning);
 

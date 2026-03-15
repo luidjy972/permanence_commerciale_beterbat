@@ -83,10 +83,16 @@
 
       <!-- Controls -->
       <section class="panel controls">
-        <h2 class="panel-title">
-          <i class="material-icons">settings</i> Parametres
-        </h2>
+        <div class="panel-heading">
+          <h2 class="panel-title">
+            <i class="material-icons">settings</i> Parametres
+          </h2>
+          <button id="toggleParametresBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">expand_less</i> <span>Masquer</span>
+          </button>
+        </div>
 
+        <div id="parametresModule">
         <div class="controls-grid">
           <div class="field">
             <label for="weekStart">Lundi de depart</label>
@@ -147,14 +153,22 @@
             <i class="material-icons">calendar_month</i> Planning annuel
           </button>
         </div>
+        </div>
       </section>
 
       <!-- Summary -->
       <section class="panel summary" id="summaryPanel" hidden>
-        <h2 class="panel-title">
-          <i class="material-icons">bar_chart</i> Recapitulatif
-        </h2>
-        <div id="summaryContent" class="summary-grid"></div>
+        <div class="panel-heading">
+          <h2 class="panel-title">
+            <i class="material-icons">bar_chart</i> Recapitulatif
+          </h2>
+          <button id="toggleRecapitulatifBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">expand_less</i> <span>Masquer</span>
+          </button>
+        </div>
+        <div id="recapitulatifModule">
+          <div id="summaryContent" class="summary-grid"></div>
+        </div>
       </section>
 
       <section class="panel rotation" id="rotationPanel" hidden>
