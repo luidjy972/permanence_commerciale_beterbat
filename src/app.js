@@ -639,8 +639,8 @@ function printWeekTable() {
   const year = weekStartDate.getFullYear();
   const vowelMonths = new Set([3, 7, 9]);
   const monthLabels = [
-    "JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN",
-    "JUILLET", "AOUT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DECEMBRE",
+    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE",
   ];
   const monthName = monthLabels[monthIndex] || "";
   const prefix = vowelMonths.has(monthIndex) ? "MOIS D'" : "MOIS DE ";
@@ -760,8 +760,8 @@ body {
         <th class="title-cell" colspan="2">${titleText}</th>
       </tr>
       <tr>
-        <th class="header-shift">MATIN &nbsp; de 8h30 a 13h00</th>
-        <th class="header-shift">SOIR de 13h00 a 17h00</th>
+        <th class="header-shift">MATIN &nbsp; de 8h30 à 13h00</th>
+        <th class="header-shift">SOIR de 13h00 à 17h00</th>
       </tr>
     </thead>
     <tbody>
