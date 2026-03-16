@@ -37,7 +37,7 @@ authElements.loginForm.addEventListener("submit", async (event) => {
   const email = authElements.loginEmail.value.trim();
   const password = authElements.loginPassword.value;
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   authElements.loginSubmit.disabled = false;
   authElements.loginSubmit.textContent = "Se connecter";
@@ -52,12 +52,12 @@ authElements.loginForm.addEventListener("submit", async (event) => {
 });
 
 authElements.logoutButton.addEventListener("click", async () => {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   showLogin();
 });
 
 async function initAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
 
   if (session) {
     showApp();
@@ -66,7 +66,7 @@ async function initAuth() {
     showLogin();
   }
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
     if (!session) {
       showLogin();
     }
