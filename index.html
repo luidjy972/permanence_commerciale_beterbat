@@ -114,6 +114,47 @@
         </div>
       </section>
 
+      <!-- User Management Module -->
+      <section class="panel users-panel no-print">
+        <div class="panel-heading">
+          <h2 class="panel-title">
+            <i class="material-icons">admin_panel_settings</i> Gestion des utilisateurs
+          </h2>
+          <button id="toggleUsersBtn" type="button" class="btn btn-secondary btn-sm">
+            <i class="material-icons">expand_more</i> Afficher
+          </button>
+        </div>
+        <div id="usersModule" hidden>
+          <div class="commercials-table-wrapper">
+            <table class="commercials-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+          <h3 class="user-form-title">Ajouter un utilisateur</h3>
+          <div class="commercial-add-form user-add-form">
+            <input id="userName" type="text" placeholder="Nom" />
+            <input id="userEmail" type="email" placeholder="Email" />
+            <input id="userPassword" type="password" placeholder="Mot de passe" minlength="6" />
+            <select id="userRole">
+              <option value="user">Utilisateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+            <button id="addUserBtn" type="button" class="btn btn-primary btn-sm">
+              <i class="material-icons">person_add</i> Ajouter
+            </button>
+          </div>
+          <p id="userStatusText" class="status user-status" hidden></p>
+        </div>
+      </section>
+
       <!-- Controls -->
       <section class="panel controls">
         <div class="panel-heading">
