@@ -1,3 +1,6 @@
+import { supabaseClient } from './supabase.js';
+import { loadState } from './app.js';
+
 const authElements = {
   loginScreen: document.querySelector("#loginScreen"),
   loginForm: document.querySelector("#loginForm"),

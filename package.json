@@ -1,0 +1,17 @@
+{
+  "name": "planning-permanence-hebdomadaire",
+  "version": "1.0.0",
+  "description": "Application web simple et professionnelle pour preparer un planning de permanence aux couleurs de Beterbat, sur une semaine ou sur plusieurs mois.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}

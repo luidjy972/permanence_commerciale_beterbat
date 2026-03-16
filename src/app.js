@@ -1,3 +1,5 @@
+import { supabaseClient } from './supabase.js';
+
 const STORAGE_KEY = "weekly-duty-schedule-state";
 const COMMERCIALS_STORAGE_KEY = "weekly-duty-commercials";
 const DEFAULT_PLANNING_WEEKS = 12;
@@ -91,6 +93,70 @@ let state = {
   viewWeekIndex: null,
 };
 
+// ===== Database Functions =====
+
+async function fetchCommercialsFromDB() {
+  const { data, error } = await supabaseClient
+    .from('commercials')
+    .select('*')
+    .order('position', { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+async function insertCommercialToDB(name, agency, position) {
+  const { data, error } = await supabaseClient
+    .from('commercials')
+    .insert({ name, agency, position })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function updateCommercialInDB(id, name, agency) {
+  const { error } = await supabaseClient
+    .from('commercials')
+    .update({ name, agency })
+    .eq('id', id);
+  if (error) throw error;
+}
+
+async function deleteCommercialFromDB(id) {
+  const { error } = await supabaseClient
+    .from('commercials')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+
+async function fetchPlanningStateFromDB() {
+  const { data, error } = await supabaseClient
+    .from('planning_state')
+    .select('*')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+async function upsertPlanningStateToDB(planningState) {
+  const { error } = await supabaseClient
+    .from('planning_state')
+    .upsert({
+      id: 1,
+      week_start: planningState.weekStart,
+      planning_weeks: planningState.planningWeeks,
+      start_index: planningState.startIndex,
+      rotation_mode: planningState.rotationMode,
+      planning_data: planningState.planning,
+      updated_at: new Date().toISOString(),
+    });
+  if (error) throw error;
+}
+
+// ===== Local Storage Functions =====
+
 function loadCommercials() {
   const saved = localStorage.getItem(COMMERCIALS_STORAGE_KEY);
   if (saved) {
@@ -110,17 +176,31 @@ function renderCommercials() {
   elements.commercialsBody.innerHTML = "";
   commercials.forEach((commercial, index) => {
     const row = document.createElement("tr");
-    row.innerHTML =
-      `<td>${commercial.name}</td>` +
-      `<td>${commercial.agency}</td>` +
-      `<td class="commercial-actions">` +
-      `<button type="button" class="btn-icon btn-icon-delete" data-index="${index}" title="Supprimer">` +
-      `<i class="material-icons">delete</i>` +
-      `</button>` +
-      `</td>`;
 
-    const deleteBtn = row.querySelector(".btn-icon-delete");
-    deleteBtn.addEventListener("click", () => {
+    const nameCell = document.createElement("td");
+    nameCell.textContent = commercial.name;
+
+    const agencyCell = document.createElement("td");
+    agencyCell.textContent = commercial.agency;
+
+    const actionsCell = document.createElement("td");
+    actionsCell.className = "commercial-actions";
+    actionsCell.innerHTML =
+      `<button type="button" class="btn-icon btn-icon-edit" title="Modifier">` +
+      `<i class="material-icons">edit</i>` +
+      `</button>` +
+      `<button type="button" class="btn-icon btn-icon-delete" title="Supprimer">` +
+      `<i class="material-icons">delete</i>` +
+      `</button>`;
+
+    row.appendChild(nameCell);
+    row.appendChild(agencyCell);
+    row.appendChild(actionsCell);
+
+    actionsCell.querySelector(".btn-icon-edit").addEventListener("click", () => {
+      editCommercialRow(index);
+    });
+    actionsCell.querySelector(".btn-icon-delete").addEventListener("click", () => {
       removeCommercial(index);
     });
 
@@ -130,7 +210,62 @@ function renderCommercials() {
   syncStartIndexOptions();
 }
 
-function addCommercial() {
+function editCommercialRow(index) {
+  const commercial = commercials[index];
+  const row = elements.commercialsBody.children[index];
+  if (!row) return;
+
+  row.innerHTML =
+    `<td><input type="text" class="edit-name" /></td>` +
+    `<td><input type="text" class="edit-agency" /></td>` +
+    `<td class="commercial-actions">` +
+    `<button type="button" class="btn-icon btn-icon-save" title="Enregistrer">` +
+    `<i class="material-icons">check</i>` +
+    `</button>` +
+    `<button type="button" class="btn-icon btn-icon-cancel" title="Annuler">` +
+    `<i class="material-icons">close</i>` +
+    `</button>` +
+    `</td>`;
+
+  row.querySelector(".edit-name").value = commercial.name;
+  row.querySelector(".edit-agency").value = commercial.agency;
+
+  row.querySelector(".btn-icon-save").addEventListener("click", () => {
+    saveEditCommercial(index, row);
+  });
+  row.querySelector(".btn-icon-cancel").addEventListener("click", () => {
+    renderCommercials();
+  });
+
+  row.querySelector(".edit-name").focus();
+}
+
+async function saveEditCommercial(index, row) {
+  const name = row.querySelector(".edit-name").value.trim();
+  const agency = row.querySelector(".edit-agency").value.trim();
+
+  if (!name) {
+    updateStatus("Le nom du commercial ne peut pas etre vide.");
+    return;
+  }
+
+  commercials[index].name = name;
+  commercials[index].agency = agency;
+
+  if (commercials[index].id) {
+    try {
+      await updateCommercialInDB(commercials[index].id, name, agency);
+    } catch (err) {
+      console.error("Erreur lors de la mise a jour du commercial en base:", err);
+    }
+  }
+
+  saveCommercials();
+  renderCommercials();
+  updateStatus(`Commercial mis a jour.`);
+}
+
+async function addCommercial() {
   const name = elements.commercialName.value.trim();
   const agency = elements.commercialAgency.value.trim();
 
@@ -139,21 +274,44 @@ function addCommercial() {
     return;
   }
 
-  commercials.push({ name, agency: agency || "" });
+  const position = commercials.length;
+  const newCommercial = { name, agency: agency || "", position };
+
+  try {
+    const dbRecord = await insertCommercialToDB(name, agency || "", position);
+    newCommercial.id = dbRecord.id;
+  } catch (err) {
+    console.error("Erreur lors de l'ajout du commercial en base:", err);
+  }
+
+  commercials.push(newCommercial);
   saveCommercials();
   elements.commercialName.value = "";
   elements.commercialAgency.value = "";
   renderCommercials();
+  updateStatus(`Commercial ajoute.`);
 }
 
-function removeCommercial(index) {
+async function removeCommercial(index) {
   if (commercials.length <= 1) {
     updateStatus("Impossible de supprimer le dernier commercial.");
     return;
   }
+
+  const removed = commercials[index];
+
+  if (removed.id) {
+    try {
+      await deleteCommercialFromDB(removed.id);
+    } catch (err) {
+      console.error("Erreur lors de la suppression du commercial en base:", err);
+    }
+  }
+
   commercials.splice(index, 1);
   saveCommercials();
   renderCommercials();
+  updateStatus(`Commercial supprime.`);
 }
 
 function syncStartIndexOptions() {
@@ -1180,12 +1338,64 @@ function updateStatus(message) {
 
 function persistState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  upsertPlanningStateToDB(state).catch((err) => {
+    console.error("Erreur lors de la sauvegarde du planning en base:", err);
+  });
 }
 
-function loadState() {
+export async function loadState() {
+  // 1. Load commercials from Supabase (fallback to localStorage)
+  try {
+    const dbCommercials = await fetchCommercialsFromDB();
+    if (dbCommercials && dbCommercials.length > 0) {
+      commercials = dbCommercials;
+      saveCommercials();
+    }
+  } catch (err) {
+    console.error("Chargement des commerciaux depuis la base echoue, cache local utilise:", err);
+  }
+
+  renderCommercials();
+
+  // 2. Load planning state from Supabase
+  try {
+    const dbState = await fetchPlanningStateFromDB();
+    if (dbState) {
+      const people = commercials.map((c) => c.name);
+      const weekStart = dbState.week_start || getDefaultMonday();
+      const planningWeeks = normalizePlanningWeeks(dbState.planning_weeks);
+      const startIndex = getSafeStartIndex(dbState.start_index, people.length);
+      const rotationMode = dbState.rotation_mode === "monthly" ? "monthly" : "weekly";
+      const planning =
+        Array.isArray(dbState.planning_data) && dbState.planning_data.every(isPlanningWeekValid)
+          ? dbState.planning_data
+          : people.length
+            ? buildPlanning(weekStart, people, startIndex, planningWeeks, rotationMode)
+            : [];
+
+      state = {
+        weekStart,
+        planningWeeks,
+        startIndex,
+        rotationMode,
+        people,
+        planning,
+        viewWeekIndex: null,
+      };
+
+      syncInputs();
+      renderPlanning();
+      return;
+    }
+  } catch (err) {
+    console.error("Chargement du planning depuis la base echoue, cache local utilise:", err);
+  }
+
+  // 3. Fallback to localStorage
   const savedState = localStorage.getItem(STORAGE_KEY);
 
   if (!savedState) {
+    state.people = commercials.map((c) => c.name);
     syncInputs();
     state.planning = buildPlanning(
       state.weekStart,
@@ -1226,6 +1436,8 @@ function loadState() {
 
   syncInputs();
   renderPlanning();
+  // Migrate localStorage data to Supabase
+  persistState();
 }
 
 function syncInputs() {
