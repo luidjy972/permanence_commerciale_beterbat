@@ -1,6 +1,14 @@
 const STORAGE_KEY = "weekly-duty-schedule-state";
+const COMMERCIALS_STORAGE_KEY = "weekly-duty-commercials";
 const DEFAULT_PLANNING_WEEKS = 12;
-const DEFAULT_PEOPLE = ["Alice", "Benoit", "Chloe", "David", "Emma", "Farid"];
+const DEFAULT_COMMERCIALS = [
+  { name: "Marie-Line COPPET", agency: "Fort-de-France" },
+  { name: "Stéphane LUREL", agency: "Le Lamentin" },
+  { name: "Fabienne MARDAYE", agency: "Ducos" },
+  { name: "Jean-Marc ROSALIE", agency: "Le Robert" },
+  { name: "Nathalie SYMPHOR", agency: "Sainte-Anne" },
+  { name: "Patrick DORLEAN", agency: "Trinité" },
+];
 const WEEKDAYS = [
   { label: "Lundi", offset: 0 },
   { label: "Mardi", offset: 1 },
@@ -12,12 +20,26 @@ const SHIFTS = [
   { label: "Matin", timeRange: "8H00 - 13H00" },
   { label: "Apres-midi", timeRange: "14H00 - 17H00" },
 ];
+const COMMERCIAL_COLORS = [
+  "#FFD700",
+  "#FFA500",
+  "#FFB6C1",
+  "#90EE90",
+  "#ADD8E6",
+  "#DDA0DD",
+  "#F0E68C",
+  "#87CEEB",
+  "#FFC0CB",
+  "#98FB98",
+  "#F4A460",
+  "#B0E0E6",
+];
 
 const elements = {
   weekStart: document.querySelector("#weekStart"),
   planningWeeks: document.querySelector("#planningWeeks"),
   startIndex: document.querySelector("#startIndex"),
-  peopleInput: document.querySelector("#peopleInput"),
+  rotationMode: document.querySelector("#rotationMode"),
   generateButton: document.querySelector("#generateButton"),
   resetButton: document.querySelector("#resetButton"),
   exportButton: document.querySelector("#exportButton"),
@@ -42,16 +64,134 @@ const elements = {
   viewAllBtn: document.querySelector("#viewAllBtn"),
   exportWeekCsvBtn: document.querySelector("#exportWeekCsvBtn"),
   printWeekBtn: document.querySelector("#printWeekBtn"),
+  printWeekTableBtn: document.querySelector("#printWeekTableBtn"),
+  weekSelector: document.querySelector("#weekSelector"),
+  commercialsBody: document.querySelector("#commercialsBody"),
+  commercialName: document.querySelector("#commercialName"),
+  commercialAgency: document.querySelector("#commercialAgency"),
+  addCommercialBtn: document.querySelector("#addCommercialBtn"),
+  toggleCommercialsBtn: document.querySelector("#toggleCommercialsBtn"),
+  commercialsModule: document.querySelector("#commercialsModule"),
+  toggleParametresBtn: document.querySelector("#toggleParametresBtn"),
+  parametresModule: document.querySelector("#parametresModule"),
+  toggleRecapitulatifBtn: document.querySelector("#toggleRecapitulatifBtn"),
+  recapitulatifModule: document.querySelector("#recapitulatifModule"),
+  printPeriodBtn: document.querySelector("#printPeriodBtn"),
 };
+
+let commercials = loadCommercials();
 
 let state = {
   weekStart: getDefaultMonday(),
   planningWeeks: DEFAULT_PLANNING_WEEKS,
   startIndex: 0,
-  people: DEFAULT_PEOPLE,
+  rotationMode: "weekly",
+  people: commercials.map((c) => c.name),
   planning: [],
   viewWeekIndex: null,
 };
+
+function loadCommercials() {
+  const saved = localStorage.getItem(COMMERCIALS_STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (Array.isArray(parsed) && parsed.length && parsed.every((c) => c && typeof c.name === "string")) {
+      return parsed;
+    }
+  }
+  return DEFAULT_COMMERCIALS.slice();
+}
+
+function saveCommercials() {
+  localStorage.setItem(COMMERCIALS_STORAGE_KEY, JSON.stringify(commercials));
+}
+
+function renderCommercials() {
+  elements.commercialsBody.innerHTML = "";
+  commercials.forEach((commercial, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML =
+      `<td>${commercial.name}</td>` +
+      `<td>${commercial.agency}</td>` +
+      `<td class="commercial-actions">` +
+      `<button type="button" class="btn-icon btn-icon-delete" data-index="${index}" title="Supprimer">` +
+      `<i class="material-icons">delete</i>` +
+      `</button>` +
+      `</td>`;
+
+    const deleteBtn = row.querySelector(".btn-icon-delete");
+    deleteBtn.addEventListener("click", () => {
+      removeCommercial(index);
+    });
+
+    elements.commercialsBody.appendChild(row);
+  });
+
+  syncStartIndexOptions();
+}
+
+function addCommercial() {
+  const name = elements.commercialName.value.trim();
+  const agency = elements.commercialAgency.value.trim();
+
+  if (!name) {
+    updateStatus("Veuillez saisir le nom du commercial.");
+    return;
+  }
+
+  commercials.push({ name, agency: agency || "" });
+  saveCommercials();
+  elements.commercialName.value = "";
+  elements.commercialAgency.value = "";
+  renderCommercials();
+}
+
+function removeCommercial(index) {
+  if (commercials.length <= 1) {
+    updateStatus("Impossible de supprimer le dernier commercial.");
+    return;
+  }
+  commercials.splice(index, 1);
+  saveCommercials();
+  renderCommercials();
+}
+
+function syncStartIndexOptions() {
+  const currentValue = elements.startIndex.value;
+  elements.startIndex.innerHTML = "";
+  commercials.forEach((commercial, index) => {
+    const option = document.createElement("option");
+    option.value = `${index}`;
+    option.textContent = commercial.name;
+    if (`${index}` === currentValue) {
+      option.selected = true;
+    }
+    elements.startIndex.appendChild(option);
+  });
+}
+
+function toggleCommercialsModule() {
+  const module = elements.commercialsModule;
+  const isHidden = module.hidden;
+  module.hidden = !isHidden;
+  elements.toggleCommercialsBtn.querySelector(".material-icons").textContent =
+    isHidden ? "expand_less" : "expand_more";
+}
+
+function toggleParametresModule() {
+  toggleModule(elements.parametresModule, elements.toggleParametresBtn);
+}
+
+function toggleRecapitulatifModule() {
+  toggleModule(elements.recapitulatifModule, elements.toggleRecapitulatifBtn);
+}
+
+function toggleModule(module, btn) {
+  const isHidden = module.hidden;
+  module.hidden = !isHidden;
+  btn.querySelector(".material-icons").textContent = isHidden ? "expand_less" : "expand_more";
+  btn.querySelector("span").textContent = isHidden ? "Masquer" : "Afficher";
+}
 
 function getDefaultMonday() {
   const today = new Date();
@@ -108,6 +248,14 @@ function getISOWeekNumber(dateString) {
   temp.setUTCDate(temp.getUTCDate() + 4 - (temp.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
   return Math.ceil(((temp - yearStart) / 86400000 + 1) / 7);
+}
+
+function getCommercialColor(name) {
+  const index = state.people.indexOf(name);
+  if (index === -1) {
+    return "#FFFFFF";
+  }
+  return COMMERCIAL_COLORS[index % COMMERCIAL_COLORS.length];
 }
 
 function normalizePlanningWeeks(value) {
@@ -169,12 +317,22 @@ function buildWeekEntries(week, weekOffset) {
   });
 }
 
-function buildPlanning(weekStart, people, startIndex, planningWeeks) {
+function buildPlanning(weekStart, people, startIndex, planningWeeks, rotationMode) {
   return Array.from({ length: planningWeeks }, (_, weekOffset) => {
     const currentWeekStart = addDays(weekStart, weekOffset * 7);
     const currentWeekEnd = addDays(currentWeekStart, 4);
     const weekNumber = getISOWeekNumber(currentWeekStart);
-    const offPersonIndex = people.length > 5 ? (startIndex + weekOffset) % people.length : -1;
+
+    let offPersonIndex = -1;
+    if (people.length > 5) {
+      if (rotationMode === "monthly") {
+        const monthOffset = Math.floor(weekOffset / 4);
+        offPersonIndex = (startIndex + monthOffset) % people.length;
+      } else {
+        offPersonIndex = (startIndex + weekOffset) % people.length;
+      }
+    }
+
     const offPerson = offPersonIndex === -1 ? "" : people[offPersonIndex];
     const activePeople =
       offPersonIndex === -1
@@ -322,6 +480,13 @@ function renderRotation() {
     return;
   }
 
+  const rotationTitle = document.querySelector("#rotationTitle");
+  if (rotationTitle) {
+    rotationTitle.textContent = state.rotationMode === "monthly"
+      ? "Rotation mensuelle"
+      : "Rotation hebdomadaire";
+  }
+
   elements.rotationContent.innerHTML = "";
 
   weeksWithOffPerson.forEach((week) => {
@@ -329,7 +494,10 @@ function renderRotation() {
     card.className = "rotation-card";
     card.innerHTML =
       `<span class="rotation-card-week">Semaine ${week.weekNumber}</span>` +
+      `<div class="rotation-card-header">` +
       `<span class="rotation-card-name">${week.offPerson}</span>` +
+      `<span class="rotation-card-note">Le commercial ${week.offPerson} est en rotation de repos et ne sera pas présent en permanence cette semaine.</span>` +
+      `</div>` +
       `<span class="rotation-card-dates">` +
       `Du ${formatShortDate(week.weekStart)} au ${formatShortDate(week.weekEnd)}` +
       `</span>`;
@@ -367,6 +535,8 @@ function updateWeekNav() {
     elements.viewAllBtn.disabled = true;
     elements.exportWeekCsvBtn.disabled = true;
     elements.printWeekBtn.disabled = true;
+    elements.printWeekTableBtn.disabled = true;
+    elements.weekSelector.value = "";
   } else {
     const week = state.planning[state.viewWeekIndex];
     const offText = week.offPerson ? ` — Repos : ${week.offPerson}` : "";
@@ -380,6 +550,8 @@ function updateWeekNav() {
     elements.viewAllBtn.disabled = false;
     elements.exportWeekCsvBtn.disabled = false;
     elements.printWeekBtn.disabled = false;
+    elements.printWeekTableBtn.disabled = false;
+    elements.weekSelector.value = `${week.weekNumber}`;
   }
 }
 
@@ -456,6 +628,159 @@ function printSingleWeek() {
   window.print();
 }
 
+function printWeekTable() {
+  if (state.viewWeekIndex === null || !state.planning.length) {
+    return;
+  }
+
+  const week = state.planning[state.viewWeekIndex];
+  const weekStartDate = new Date(`${week.weekStart}T12:00:00`);
+  const monthIndex = weekStartDate.getMonth();
+  const year = weekStartDate.getFullYear();
+  const vowelMonths = new Set([3, 7, 9]);
+  const monthLabels = [
+    "JANVIER", "FÉVRIER", "MARS", "AVRIL", "MAI", "JUIN",
+    "JUILLET", "AOÛT", "SEPTEMBRE", "OCTOBRE", "NOVEMBRE", "DÉCEMBRE",
+  ];
+  const monthName = monthLabels[monthIndex] || "";
+  const prefix = vowelMonths.has(monthIndex) ? "MOIS D'" : "MOIS DE ";
+  const titleText = `${prefix}${monthName} ${year}`;
+
+  const dayRows = WEEKDAYS.map((day) => {
+    const morningEntry = week.entries.find(
+      (e) => e.dayLabel === day.label && e.shiftLabel === "Matin",
+    );
+    const afternoonEntry = week.entries.find(
+      (e) => e.dayLabel === day.label && e.shiftLabel === "Apres-midi",
+    );
+    const morningName = morningEntry ? morningEntry.assignee : "";
+    const afternoonName = afternoonEntry ? afternoonEntry.assignee : "";
+    const morningColor = morningName ? getCommercialColor(morningName) : "#FFFFFF";
+    const afternoonColor = afternoonName ? getCommercialColor(afternoonName) : "#FFFFFF";
+
+    return (
+      `<tr>` +
+      `<td class="day-cell">${day.label.toUpperCase()}</td>` +
+      `<td class="person-cell" style="background-color:${morningColor};">${morningName}</td>` +
+      `<td class="person-cell" style="background-color:${afternoonColor};">${afternoonName}</td>` +
+      `</tr>`
+    );
+  }).join("");
+
+  const samediRow =
+    `<tr>` +
+    `<td class="day-cell">SAMEDI</td>` +
+    `<td class="rdv-cell" colspan="2">SUR RENDEZ-VOUS</td>` +
+    `</tr>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>Planning Semaine ${week.weekNumber} — Beterbat</title>
+<style>
+@page {
+  size: landscape;
+  margin: 15mm;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12pt;
+  color: #000;
+  background: #fff;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.table-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 40px auto;
+}
+.week-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #c0c0c0;
+  border: 2px solid #999;
+}
+.week-table th,
+.week-table td {
+  border: 1px solid #999;
+  padding: 10px 14px;
+  font-size: 12pt;
+  line-height: 1.4;
+}
+.title-cell {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13pt;
+  text-decoration: underline;
+  background: #c0c0c0;
+}
+.header-jour {
+  text-align: left;
+  font-weight: 700;
+  font-size: 12pt;
+  background: #c0c0c0;
+  vertical-align: middle;
+}
+.header-shift {
+  text-align: center;
+  font-weight: 700;
+  font-size: 12pt;
+  background: #c0c0c0;
+}
+.day-cell {
+  font-weight: 400;
+  text-align: left;
+  padding-left: 14px;
+  background: #c0c0c0;
+  width: 18%;
+}
+.person-cell {
+  font-weight: 400;
+  font-size: 12pt;
+  padding: 10px 14px;
+  width: 41%;
+}
+.rdv-cell {
+  text-align: center;
+  font-weight: 700;
+  font-size: 12pt;
+  background: #c0c0c0;
+}
+</style>
+</head>
+<body>
+<div class="table-container">
+  <table class="week-table">
+    <thead>
+      <tr>
+        <th class="header-jour" rowspan="2">JOURS</th>
+        <th class="title-cell" colspan="2">${titleText}</th>
+      </tr>
+      <tr>
+        <th class="header-shift">MATIN &nbsp; de 8h30 à 13h00</th>
+        <th class="header-shift">SOIR de 13h00 à 17h00</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${dayRows}
+      ${samediRow}
+    </tbody>
+  </table>
+</div>
+<script>window.onload=function(){window.print();};<\/script>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+}
+
 function getMonthLabel(monthIndex) {
   const labels = [
     "JANVIER", "FEVRIER", "MARS", "AVRIL", "MAI", "JUIN",
@@ -515,7 +840,7 @@ function buildAnnualPlanning() {
   firstMonday.setDate(jan1.getDate() + diff);
 
   const annualStart = toInputDate(firstMonday);
-  return buildPlanning(annualStart, state.people, state.startIndex, 52);
+  return buildPlanning(annualStart, state.people, state.startIndex, 52, state.rotationMode);
 }
 
 function buildMonthTableHtml(monthGroup) {
@@ -828,6 +1153,7 @@ function renderPlanning() {
   elements.exportButton.disabled = false;
   updatePlanningCounter();
   updateWeekNav();
+  updateWeekSelectorOptions();
   renderSummary();
   renderRotation();
 
@@ -866,6 +1192,7 @@ function loadState() {
       state.people,
       state.startIndex,
       state.planningWeeks,
+      state.rotationMode,
     );
     renderPlanning();
     persistState();
@@ -880,16 +1207,18 @@ function loadState() {
   const weekStart = parsedState.weekStart || state.weekStart;
   const planningWeeks = normalizePlanningWeeks(parsedState.planningWeeks);
   const startIndex = getSafeStartIndex(parsedState.startIndex, nextPeople.length);
+  const rotationMode = parsedState.rotationMode === "monthly" ? "monthly" : "weekly";
   const planning = Array.isArray(parsedState.planning) && parsedState.planning.every(isPlanningWeekValid)
     ? parsedState.planning
     : nextPeople.length
-      ? buildPlanning(weekStart, nextPeople, startIndex, planningWeeks)
+      ? buildPlanning(weekStart, nextPeople, startIndex, planningWeeks, rotationMode)
       : [];
 
   state = {
     weekStart,
     planningWeeks,
     startIndex,
+    rotationMode,
     people: nextPeople,
     planning,
     viewWeekIndex: null,
@@ -903,21 +1232,24 @@ function syncInputs() {
   elements.weekStart.value = state.weekStart;
   elements.planningWeeks.value = `${state.planningWeeks}`;
   elements.startIndex.value = `${state.startIndex}`;
-  elements.peopleInput.value = state.people.join("\n");
+  elements.rotationMode.value = state.rotationMode;
+  syncStartIndexOptions();
   updatePlanningCounter();
 }
 
 function generatePlanning() {
-  const people = parsePeople(elements.peopleInput.value);
+  const people = commercials.map((c) => c.name);
   const weekStart = elements.weekStart.value || getDefaultMonday();
   const planningWeeks = normalizePlanningWeeks(elements.planningWeeks.value);
   const startIndex = getSafeStartIndex(elements.startIndex.value, people.length);
+  const rotationMode = elements.rotationMode.value === "monthly" ? "monthly" : "weekly";
 
   if (!people.length) {
     state = {
       weekStart,
       planningWeeks,
       startIndex: 0,
+      rotationMode,
       people: [],
       planning: [],
       viewWeekIndex: null,
@@ -933,8 +1265,9 @@ function generatePlanning() {
     weekStart,
     planningWeeks,
     startIndex,
+    rotationMode,
     people,
-    planning: buildPlanning(weekStart, people, startIndex, planningWeeks),
+    planning: buildPlanning(weekStart, people, startIndex, planningWeeks, rotationMode),
     viewWeekIndex: null,
   };
 
@@ -944,17 +1277,22 @@ function generatePlanning() {
 }
 
 function resetState() {
+  commercials = loadCommercials();
+  const people = commercials.map((c) => c.name);
+
   state = {
     weekStart: getDefaultMonday(),
     planningWeeks: DEFAULT_PLANNING_WEEKS,
     startIndex: 0,
-    people: DEFAULT_PEOPLE,
+    rotationMode: "weekly",
+    people,
     planning: [],
     viewWeekIndex: null,
   };
 
   syncInputs();
-  state.planning = buildPlanning(state.weekStart, state.people, state.startIndex, state.planningWeeks);
+  renderCommercials();
+  state.planning = buildPlanning(state.weekStart, state.people, state.startIndex, state.planningWeeks, state.rotationMode);
   renderPlanning();
   persistState();
 }
@@ -1015,6 +1353,114 @@ function printSchedule() {
   window.print();
 }
 
+function printPeriodPlanning() {
+  if (!state.planning.length) {
+    return;
+  }
+
+  const visibleWeeks = getVisibleWeeks();
+  const firstWeek = visibleWeeks[0];
+  const lastWeek = visibleWeeks[visibleWeeks.length - 1];
+
+  const offPersonLines = visibleWeeks
+    .filter((w) => w.offPerson)
+    .map((w) => `<p style="margin:2px 0;"><strong>Semaine ${w.weekNumber}</strong> — Commercial de repos : ${w.offPerson}</p>`)
+    .join("");
+
+  let tableRows = "";
+  visibleWeeks.forEach((week) => {
+    tableRows +=
+      `<tr style="background:#f0f0f0;">` +
+      `<td colspan="5" style="padding:10px 8px;font-weight:700;font-size:0.9em;border:1px solid #999;">` +
+      `Semaine ${week.weekNumber} — Du ${formatShortDate(week.weekStart)} au ${formatShortDate(week.weekEnd)}` +
+      (week.offPerson ? ` — Commercial de repos : ${week.offPerson}` : "") +
+      `</td></tr>`;
+
+    let previousDay = "";
+    week.entries.forEach((entry, idx) => {
+      const borderTop = (entry.dayLabel !== previousDay && idx > 0)
+        ? "border-top:2px solid #666;"
+        : "";
+      previousDay = entry.dayLabel;
+      tableRows +=
+        `<tr style="${borderTop}">` +
+        `<td style="padding:8px;border:1px solid #ccc;font-weight:600;">${entry.dayLabel}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;">${formatDate(entry.date)}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;font-weight:600;color:#ce2642;">${entry.shiftLabel}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;color:#6b6b6a;">${entry.timeRange}</td>` +
+        `<td style="padding:8px;border:1px solid #ccc;font-weight:600;">${entry.assignee}</td>` +
+        `</tr>`;
+    });
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Planning de la période</title>
+<style>
+  body { font-family: "Open Sans", Arial, sans-serif; margin: 20px; color: #212529; }
+  h2 { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th { text-align: left; padding: 10px 8px; font-size: 0.85em; color: #fff; background-color: #6b6b6a; text-transform: uppercase; letter-spacing: 0.03em; }
+  @media print { body { margin: 0; } }
+</style>
+</head>
+<body>
+  <h2>Planning de la période</h2>
+  <p style="color:#6b6b6a;font-size:0.9em;">Du ${formatShortDate(firstWeek.weekStart)} au ${formatShortDate(lastWeek.weekEnd)}</p>
+  ${offPersonLines ? `<div style="font-size:0.85em;color:#6b6b6a;margin-bottom:8px;">${offPersonLines}</div>` : ""}
+  <table>
+    <thead>
+      <tr>
+        <th>Jour</th>
+        <th>Date</th>
+        <th>Créneau</th>
+        <th>Horaire</th>
+        <th>Permanence</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tableRows}
+    </tbody>
+  </table>
+<script>window.onload=function(){window.print();};<\/script>
+</body>
+</html>`;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
+}
+
+function jumpToWeek() {
+  const weekNum = Number.parseInt(elements.weekSelector.value, 10);
+  if (Number.isNaN(weekNum)) {
+    viewAllWeeks();
+    return;
+  }
+  const index = state.planning.findIndex((w) => w.weekNumber === weekNum);
+  if (index !== -1) {
+    viewSingleWeek(index);
+  }
+}
+
+function updateWeekSelectorOptions() {
+  const current = elements.weekSelector.value;
+  elements.weekSelector.innerHTML = '<option value="">Toutes les semaines</option>';
+  state.planning.forEach((week) => {
+    const option = document.createElement("option");
+    option.value = `${week.weekNumber}`;
+    option.textContent = `Semaine ${week.weekNumber}`;
+    if (`${week.weekNumber}` === current) {
+      option.selected = true;
+    }
+    elements.weekSelector.appendChild(option);
+  });
+}
+
 elements.generateButton.addEventListener("click", generatePlanning);
 elements.resetButton.addEventListener("click", resetState);
 elements.exportButton.addEventListener("click", exportCsv);
@@ -1025,19 +1471,18 @@ elements.nextWeekBtn.addEventListener("click", () => navigateWeek(1));
 elements.viewAllBtn.addEventListener("click", viewAllWeeks);
 elements.exportWeekCsvBtn.addEventListener("click", exportWeekCsv);
 elements.printWeekBtn.addEventListener("click", printSingleWeek);
+elements.printWeekTableBtn.addEventListener("click", printWeekTable);
+elements.addCommercialBtn.addEventListener("click", addCommercial);
+elements.toggleCommercialsBtn.addEventListener("click", toggleCommercialsModule);
+elements.toggleParametresBtn.addEventListener("click", toggleParametresModule);
+elements.toggleRecapitulatifBtn.addEventListener("click", toggleRecapitulatifModule);
+elements.weekSelector.addEventListener("change", jumpToWeek);
+elements.rotationMode.addEventListener("change", generatePlanning);
+elements.printPeriodBtn.addEventListener("click", printPeriodPlanning);
 
 elements.weekStart.addEventListener("change", generatePlanning);
 elements.planningWeeks.addEventListener("change", generatePlanning);
 elements.startIndex.addEventListener("change", generatePlanning);
-elements.peopleInput.addEventListener("blur", () => {
-  const people = parsePeople(elements.peopleInput.value);
-  const hasChanged =
-    people.length !== state.people.length ||
-    people.some((person, index) => person !== state.people[index]);
 
-  if (hasChanged) {
-    generatePlanning();
-  }
-});
-
+renderCommercials();
 // loadState() is called by auth.js after authentication
