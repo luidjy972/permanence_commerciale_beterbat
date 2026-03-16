@@ -304,7 +304,8 @@ authElements.loginForm.addEventListener("submit", async (event) => {
   authElements.loginSubmit.textContent = "Se connecter";
 
   if (error) {
-    showLoginError("Email ou mot de passe incorrect.");
+    console.error("Erreur login:", error);
+    showLoginError(error.message || "Email ou mot de passe incorrect.");
     return;
   }
 
@@ -323,22 +324,31 @@ authElements.addUserBtn.addEventListener("click", addUser);
 authElements.toggleUsersBtn.addEventListener("click", toggleUsersModule);
 
 async function initAuth() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
+  try {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
 
-  if (session) {
-    currentAuthId = session.user?.id || null;
-    showApp();
-    await loadState();
-  } else {
-    showLogin();
-  }
+    if (error) {
+      console.error("Erreur getSession:", error.message);
+    }
 
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    if (!session) {
-      currentAuthId = null;
+    if (session) {
+      currentAuthId = session.user?.id || null;
+      showApp();
+      await loadState();
+    } else {
       showLogin();
     }
-  });
+
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        currentAuthId = null;
+        showLogin();
+      }
+    });
+  } catch (err) {
+    console.error("Erreur initialisation auth:", err);
+    showLogin();
+  }
 }
 
 initAuth();
