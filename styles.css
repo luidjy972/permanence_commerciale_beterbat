@@ -951,7 +951,12 @@ tr.week-group td {
 }
 
 .login-logo {
-  margin-bottom: 1rem;
+  display: block;
+  max-width: 100%;
+  height: auto;
+  max-height: 50px;
+  margin: 0 auto 1rem;
+  object-fit: contain;
 }
 
 .login-title {
