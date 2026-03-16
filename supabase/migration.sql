@@ -1,6 +1,7 @@
 -- ============================================================
 -- Migration : Planning de permanence — Beterbat
 -- Exécuter ce script dans l'éditeur SQL de Supabase
+-- Idempotent : peut être relancé sans erreur
 -- ============================================================
 
 -- Extension requise pour le hachage des mots de passe
@@ -9,15 +10,17 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- ===== Table des commerciaux =====
 CREATE TABLE IF NOT EXISTS commercials (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name TEXT NOT NULL,
+  name TEXT NOT NULL UNIQUE,
   agency TEXT DEFAULT '',
   position INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_commercials_position ON commercials (position);
+
 -- ===== Table de l'état du planning (singleton, id = 1) =====
 CREATE TABLE IF NOT EXISTS planning_state (
-  id INTEGER PRIMARY KEY DEFAULT 1,
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   week_start TEXT,
   planning_weeks INTEGER DEFAULT 12,
   start_index INTEGER DEFAULT 0,
@@ -37,20 +40,42 @@ CREATE TABLE IF NOT EXISTS app_users (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_app_users_auth_id ON app_users (auth_id);
+
+-- ===== Trigger mise à jour automatique de updated_at =====
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_planning_state_updated_at ON planning_state;
+CREATE TRIGGER trg_planning_state_updated_at
+  BEFORE UPDATE ON planning_state
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
 -- ===== Activer Row Level Security =====
 ALTER TABLE commercials ENABLE ROW LEVEL SECURITY;
 ALTER TABLE planning_state ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_users ENABLE ROW LEVEL SECURITY;
 
--- ===== Politiques RLS : accès pour les utilisateurs authentifiés =====
+-- ===== Politiques RLS (idempotent avec DROP IF EXISTS) =====
+DROP POLICY IF EXISTS "Authenticated full access on commercials" ON commercials;
 CREATE POLICY "Authenticated full access on commercials"
   ON commercials FOR ALL TO authenticated
   USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated full access on planning_state" ON planning_state;
 CREATE POLICY "Authenticated full access on planning_state"
   ON planning_state FOR ALL TO authenticated
   USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Authenticated full access on app_users" ON app_users;
 CREATE POLICY "Authenticated full access on app_users"
   ON app_users FOR ALL TO authenticated
   USING (true) WITH CHECK (true);
@@ -79,14 +104,15 @@ BEGIN
     RAISE EXCEPTION 'Un utilisateur avec cet email existe deja.';
   END IF;
 
-  -- Insérer dans auth.users
   new_user_id := gen_random_uuid();
 
+  -- Insérer dans auth.users (compatible Supabase GoTrue v2+)
   INSERT INTO auth.users (
     instance_id, id, aud, role, email,
     encrypted_password, email_confirmed_at,
     raw_app_meta_data, raw_user_meta_data,
-    created_at, updated_at, confirmation_token, recovery_token
+    created_at, updated_at,
+    is_super_admin
   )
   VALUES (
     '00000000-0000-0000-0000-000000000000',
@@ -95,17 +121,19 @@ BEGIN
     now(),
     '{"provider":"email","providers":["email"]}'::jsonb,
     jsonb_build_object('name', p_name),
-    now(), now(), '', ''
+    now(), now(),
+    false
   );
 
-  -- Insérer l'identité email
+  -- Insérer l'identité email (compatible GoTrue v2)
   INSERT INTO auth.identities (
     id, user_id, provider_id, identity_data, provider,
     last_sign_in_at, created_at, updated_at
   )
   VALUES (
-    gen_random_uuid(), new_user_id, p_email,
-    jsonb_build_object('sub', new_user_id::text, 'email', p_email),
+    gen_random_uuid(), new_user_id, new_user_id::text,
+    jsonb_build_object('sub', new_user_id::text, 'email', p_email,
+                       'email_verified', true, 'phone_verified', false),
     'email', now(), now(), now()
   );
 
@@ -139,7 +167,7 @@ BEGIN
 END;
 $$;
 
--- Supprimer un utilisateur (auth.users + app_users)
+-- Supprimer un utilisateur (auth.users + app_users + sessions + MFA)
 CREATE OR REPLACE FUNCTION delete_app_user(p_auth_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -152,10 +180,21 @@ BEGIN
     RAISE EXCEPTION 'Vous ne pouvez pas supprimer votre propre compte.';
   END IF;
 
-  DELETE FROM auth.identities WHERE user_id = p_auth_id;
+  -- Nettoyage MFA (si les tables existent)
+  DELETE FROM auth.mfa_challenges
+    WHERE factor_id IN (SELECT id FROM auth.mfa_factors WHERE user_id = p_auth_id);
+  DELETE FROM auth.mfa_factors WHERE user_id = p_auth_id;
+
+  -- Nettoyage sessions et tokens
+  DELETE FROM auth.refresh_tokens WHERE session_id IN
+    (SELECT id FROM auth.sessions WHERE user_id = p_auth_id);
   DELETE FROM auth.sessions WHERE user_id = p_auth_id;
-  DELETE FROM auth.refresh_tokens WHERE user_id::uuid = p_auth_id;
+
+  -- Nettoyage identité et utilisateur auth
+  DELETE FROM auth.identities WHERE user_id = p_auth_id;
   DELETE FROM auth.users WHERE id = p_auth_id;
+
+  -- Nettoyage app_users
   DELETE FROM app_users WHERE auth_id = p_auth_id;
 END;
 $$;
@@ -185,6 +224,10 @@ $$;
 
 -- ===== Données par défaut =====
 
+-- Ligne singleton planning_state
+INSERT INTO planning_state (id) VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
 -- Commerciaux initiaux
 INSERT INTO commercials (name, agency, position) VALUES
   ('Marie-Line COPPET', 'Fort-de-France', 0),
@@ -193,4 +236,4 @@ INSERT INTO commercials (name, agency, position) VALUES
   ('Jean-Marc ROSALIE', 'Le Robert', 3),
   ('Nathalie SYMPHOR', 'Sainte-Anne', 4),
   ('Patrick DORLEAN', 'Trinité', 5)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
