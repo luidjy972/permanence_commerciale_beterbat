@@ -1040,4 +1040,4 @@ elements.peopleInput.addEventListener("blur", () => {
   }
 });
 
-loadState();
+// loadState() is called by auth.js after authentication

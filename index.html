@@ -8,8 +8,36 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   </head>
   <body>
+    <!-- Login screen -->
+    <div id="loginScreen" class="login-screen" hidden>
+      <div class="login-card">
+        <img
+          src="https://www.beterbat.com/front/theme/images/logos/logo-beterbat.gif"
+          alt="Beterbat"
+          height="50"
+          class="login-logo"
+        />
+        <h1 class="login-title">Planning de permanence</h1>
+        <p class="login-subtitle">Connectez-vous pour acceder a l'application.</p>
+        <form id="loginForm" class="login-form">
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" type="email" required autocomplete="email" placeholder="admin@exemple.com" />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Mot de passe</label>
+            <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="••••••••" />
+          </div>
+          <p id="loginError" class="login-error" hidden></p>
+          <button id="loginSubmit" type="submit" class="btn btn-primary login-btn">Se connecter</button>
+        </form>
+      </div>
+    </div>
+    <!-- App (hidden until authenticated) -->
+    <div id="appContainer" hidden>
     <!-- Header -->
     <header class="header">
       <div class="header-top">
@@ -21,7 +49,12 @@
               height="50"
             />
           </a>
-          <span class="header-label">Outil interne</span>
+          <div class="header-right">
+            <span class="header-label">Outil interne</span>
+            <button id="logoutButton" type="button" class="btn btn-secondary btn-sm btn-logout">
+              <i class="material-icons">logout</i> Deconnexion
+            </button>
+          </div>
         </div>
       </div>
       <nav class="header-nav">
@@ -192,6 +225,7 @@
         <a href="https://www.beterbat.com" target="_blank" rel="noopener">www.beterbat.com</a>
       </div>
     </footer>
+    </div><!-- /appContainer -->
 
     <template id="rowTemplate">
       <tr>
@@ -205,6 +239,8 @@
       </tr>
     </template>
 
+    <script src="src/supabase.js"></script>
     <script src="src/app.js"></script>
+    <script src="src/auth.js"></script>
   </body>
 </html>
