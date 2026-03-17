@@ -311,7 +311,11 @@ authElements.loginForm.addEventListener("submit", async (event) => {
 
   currentAuthId = data.user?.id || null;
   showApp();
-  await loadState();
+  try {
+    await loadState();
+  } catch (err) {
+    console.error("Erreur chargement apres connexion:", err);
+  }
 });
 
 authElements.logoutButton.addEventListener("click", async () => {
@@ -339,8 +343,18 @@ async function initAuth() {
       showLogin();
     }
 
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        if (event === 'SIGNED_IN') {
+          currentAuthId = session.user?.id || null;
+          showApp();
+          try {
+            await loadState();
+          } catch (err) {
+            console.error("Erreur chargement apres auth change:", err);
+          }
+        }
+      } else {
         currentAuthId = null;
         showLogin();
       }

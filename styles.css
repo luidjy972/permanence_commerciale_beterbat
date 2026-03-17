@@ -1,4 +1,8 @@
 /* ===== Beterbat Design System ===== */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --brand-red: #ce2642;
   --brand-red-dark: #b9223b;
