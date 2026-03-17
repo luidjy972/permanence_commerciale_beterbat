@@ -1,17 +1,30 @@
 {
   "name": "planning-permanence-hebdomadaire",
-  "version": "1.0.0",
-  "description": "Application web simple et professionnelle pour preparer un planning de permanence aux couleurs de Beterbat, sur une semaine ou sur plusieurs mois.",
-  "main": "index.js",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Application de gestion commerciale et planning de permanence — Beterbat",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.49.1",
+    "lucide-react": "^0.468.0",
+    "next": "^16.1.7",
+    "openai": "^6.31.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "devDependencies": {
-    "vite": "^8.0.0"
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5"
   }
 }
