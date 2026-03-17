@@ -1,0 +1,24 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 })
+  }
+
+  const { id } = await params
+
+  const { error } = await supabase
+    .from('api_keys')
+    .delete()
+    .eq('id', parseInt(id))
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ message: 'Clé API supprimée.' })
+}
