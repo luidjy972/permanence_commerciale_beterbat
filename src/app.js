@@ -151,7 +151,7 @@ async function upsertPlanningStateToDB(planningState) {
       rotation_mode: planningState.rotationMode,
       planning_data: planningState.planning,
       updated_at: new Date().toISOString(),
-    });
+    }, { onConflict: 'id' });
   if (error) throw error;
 }
 

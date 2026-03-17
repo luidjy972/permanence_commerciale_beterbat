@@ -92,7 +92,7 @@ CREATE OR REPLACE FUNCTION create_app_user(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   new_user_id UUID;
@@ -161,7 +161,7 @@ CREATE OR REPLACE FUNCTION update_user_password(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   UPDATE auth.users
