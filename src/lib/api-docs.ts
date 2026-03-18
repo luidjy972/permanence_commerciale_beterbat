@@ -340,6 +340,164 @@ DELETE ${baseUrl}/api/agencies/{id}
 
 ---
 
+### 📊 Prospection — Projets
+
+#### Lister les projets de prospection
+
+\`\`\`
+GET ${baseUrl}/api/prospection/projects
+\`\`\`
+
+**Paramètres de requête (optionnels) :**
+- \`?status=nouveau\` : Filtrer par statut (nouveau, contact, devis, negociation, gagne, reporte, en_attente, annule)
+- \`?commercial_id=1\` : Filtrer par commercial assigné
+- \`?priority=high\` : Filtrer par priorité (low, medium, high)
+
+**Réponse :**
+\`\`\`json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Projet Résidence Bord de Mer",
+      "contact_name": "M. Martin",
+      "contact_phone": "0601020304",
+      "contact_email": "martin@example.com",
+      "description": "Construction résidence 12 lots",
+      "amount": 150000,
+      "status": "devis",
+      "priority": "high",
+      "commercial_id": 2,
+      "due_date": "2026-06-15",
+      "closed_at": null,
+      "created_at": "2026-03-01T10:00:00Z",
+      "updated_at": "2026-03-10T14:30:00Z",
+      "commercials": { "name": "Marie Martin" }
+    }
+  ]
+}
+\`\`\`
+
+---
+
+#### Créer un projet de prospection
+
+\`\`\`
+POST ${baseUrl}/api/prospection/projects
+\`\`\`
+
+**Corps de la requête (JSON) :**
+\`\`\`json
+{
+  "name": "Nouveau Projet",
+  "contact_name": "M. Dupont",
+  "contact_phone": "0601020304",
+  "contact_email": "dupont@example.com",
+  "description": "Rénovation bureaux",
+  "amount": 50000,
+  "status": "nouveau",
+  "priority": "medium",
+  "commercial_id": 1,
+  "due_date": "2026-09-01"
+}
+\`\`\`
+
+**Champ obligatoire :** \`name\`
+**Champs optionnels :** \`contact_name\`, \`contact_phone\`, \`contact_email\`, \`description\`, \`amount\`, \`status\` (défaut: nouveau), \`priority\` (défaut: medium), \`commercial_id\`, \`due_date\`
+
+**Statuts possibles :** nouveau, contact, devis, negociation, gagne, reporte, en_attente, annule
+**Priorités possibles :** low, medium, high
+
+---
+
+#### Obtenir un projet de prospection
+
+\`\`\`
+GET ${baseUrl}/api/prospection/projects/{id}
+\`\`\`
+
+---
+
+#### Modifier un projet de prospection
+
+\`\`\`
+PATCH ${baseUrl}/api/prospection/projects/{id}
+\`\`\`
+
+Envoyer uniquement les champs à modifier :
+\`\`\`json
+{
+  "status": "gagne",
+  "amount": 175000
+}
+\`\`\`
+
+**Note :** Lorsque le statut passe à "gagne", le champ \`closed_at\` est automatiquement rempli.
+
+**Champs modifiables :** \`name\`, \`contact_name\`, \`contact_phone\`, \`contact_email\`, \`description\`, \`amount\`, \`status\`, \`priority\`, \`commercial_id\`, \`due_date\`
+
+---
+
+#### Supprimer un projet de prospection
+
+\`\`\`
+DELETE ${baseUrl}/api/prospection/projects/{id}
+\`\`\`
+
+**Réponse :**
+\`\`\`json
+{
+  "message": "Projet de prospection supprimé."
+}
+\`\`\`
+
+---
+
+### 🎯 Prospection — Objectifs
+
+#### Obtenir les objectifs de prospection
+
+\`\`\`
+GET ${baseUrl}/api/prospection/objectives
+\`\`\`
+
+**Réponse :**
+\`\`\`json
+{
+  "data": {
+    "id": 1,
+    "target_closed_contracts": 10,
+    "target_revenue": 500000,
+    "target_total_contract_price": 1000000,
+    "contract_amount_1": 50000,
+    "contract_amount_2": 100000,
+    "contract_amount_3": 200000,
+    "contract_amount_4": null,
+    "updated_at": "2026-03-17T10:00:00Z"
+  }
+}
+\`\`\`
+
+---
+
+#### Modifier les objectifs de prospection
+
+\`\`\`
+PATCH ${baseUrl}/api/prospection/objectives
+\`\`\`
+
+Envoyer uniquement les champs à modifier :
+\`\`\`json
+{
+  "target_closed_contracts": 15,
+  "target_revenue": 750000
+}
+\`\`\`
+
+**Champs modifiables :** \`target_closed_contracts\`, \`target_revenue\`, \`target_total_contract_price\`, \`contract_amount_1\`, \`contract_amount_2\`, \`contract_amount_3\`, \`contract_amount_4\`
+
+---
+
 ## Codes de réponse
 
 | Code | Signification |
@@ -377,5 +535,25 @@ DELETE ${baseUrl}/api/agencies/{id}
 1. \`GET /api/planning\` → Récupérer tout le planning
 2. Filtrer \`planning_data\` par \`weekNumber\` ou \`weekStart\` pour la semaine voulue
 3. \`offPerson\` indique qui est en repos, \`entries\` liste tous les créneaux
+
+### Créer un nouveau projet de prospection et l'assigner
+1. \`GET /api/commercials\` → Lister les commerciaux disponibles
+2. \`POST /api/prospection/projects\` avec \`{ "name": "...", "commercial_id": X, "status": "nouveau" }\`
+3. Le projet apparaît dans le tableau de bord de prospection
+
+### Suivre le pipeline de prospection
+1. \`GET /api/prospection/projects\` → Voir tous les projets
+2. Filtrer par statut pour voir les projets en \`devis\`, \`negociation\`, etc.
+3. \`GET /api/prospection/objectives\` → Comparer avec les objectifs définis
+
+### Passer un projet en "gagné"
+1. \`PATCH /api/prospection/projects/{id}\` avec \`{ "status": "gagne" }\`
+2. Le champ \`closed_at\` est automatiquement rempli
+3. \`GET /api/prospection/objectives\` → Vérifier la progression vers les objectifs
+
+### Gérer les agences et leurs commerciaux
+1. \`GET /api/agencies\` → Lister les agences
+2. \`POST /api/agencies\` → Créer une nouvelle agence
+3. \`PATCH /api/commercials/{id}\` avec \`{ "agency": "Nom Agence" }\` → Assigner un commercial à l'agence
 `
 }

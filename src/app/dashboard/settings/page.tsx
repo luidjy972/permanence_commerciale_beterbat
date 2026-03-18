@@ -533,6 +533,330 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* Agencies Endpoints */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: 'var(--color-text-tertiary)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-purple-400" />
+              Agences
+            </h3>
+            <div className="space-y-3">
+              <EndpointCard
+                method="GET"
+                path="/api/agencies"
+                description="Lister toutes les agences"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X GET ${baseUrl || 'https://votre-domaine.com'}/api/agencies \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "data": [
+    {
+      "id": 1,
+      "name": "Fort-de-France",
+      "address": "123 rue Exemple",
+      "phone": "0596 XX XX XX",
+      "created_at": "2026-01-15T10:00:00Z"
+    }
+  ]
+}`}
+              />
+              <EndpointCard
+                method="POST"
+                path="/api/agencies"
+                description="Ajouter une nouvelle agence"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X POST ${baseUrl || 'https://votre-domaine.com'}/api/agencies \\
+  -H "Authorization: Bearer VOTRE_CLE_API" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Nouvelle Agence",
+    "address": "456 rue Exemple",
+    "phone": "0596 XX XX XX"
+  }'`}
+                response={`{
+  "data": {
+    "id": 3,
+    "name": "Nouvelle Agence",
+    "address": "456 rue Exemple",
+    "phone": "0596 XX XX XX",
+    "created_at": "2026-03-18T10:00:00Z"
+  }
+}`}
+                params={[
+                  { name: 'name', type: 'string', desc: "Nom de l'agence (obligatoire)" },
+                  { name: 'address', type: 'string', desc: 'Adresse' },
+                  { name: 'phone', type: 'string', desc: 'Téléphone' },
+                ]}
+              />
+              <EndpointCard
+                method="GET"
+                path="/api/agencies/{id}"
+                description="Obtenir une agence par son ID"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X GET ${baseUrl || 'https://votre-domaine.com'}/api/agencies/1 \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "data": {
+    "id": 1,
+    "name": "Fort-de-France",
+    "address": "123 rue Exemple",
+    "phone": "0596 XX XX XX",
+    "created_at": "2026-01-15T10:00:00Z"
+  }
+}`}
+              />
+              <EndpointCard
+                method="PATCH"
+                path="/api/agencies/{id}"
+                description="Modifier une agence (envoyer uniquement les champs à modifier)"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X PATCH ${baseUrl || 'https://votre-domaine.com'}/api/agencies/1 \\
+  -H "Authorization: Bearer VOTRE_CLE_API" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "address": "Nouvelle adresse"
+  }'`}
+                response={`{
+  "data": {
+    "id": 1,
+    "name": "Fort-de-France",
+    "address": "Nouvelle adresse",
+    "phone": "0596 XX XX XX",
+    "created_at": "2026-01-15T10:00:00Z"
+  }
+}`}
+              />
+              <EndpointCard
+                method="DELETE"
+                path="/api/agencies/{id}"
+                description="Supprimer une agence"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X DELETE ${baseUrl || 'https://votre-domaine.com'}/api/agencies/1 \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "message": "Agence supprimée."
+}`}
+              />
+            </div>
+          </div>
+
+          {/* Prospection Projects Endpoints */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: 'var(--color-text-tertiary)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400" />
+              Prospection — Projets
+            </h3>
+            <div className="space-y-3">
+              <EndpointCard
+                method="GET"
+                path="/api/prospection/projects"
+                description="Lister les projets de prospection (filtres: ?status=, ?commercial_id=, ?priority=)"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X GET "${baseUrl || 'https://votre-domaine.com'}/api/prospection/projects?status=devis" \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "data": [
+    {
+      "id": 1,
+      "name": "Projet Résidence Bord de Mer",
+      "contact_name": "M. Martin",
+      "contact_phone": "0601020304",
+      "contact_email": "martin@example.com",
+      "description": "Construction résidence 12 lots",
+      "amount": 150000,
+      "status": "devis",
+      "priority": "high",
+      "commercial_id": 2,
+      "due_date": "2026-06-15",
+      "closed_at": null,
+      "created_at": "2026-03-01T10:00:00Z",
+      "commercials": { "name": "Marie Martin" }
+    }
+  ]
+}`}
+              />
+              <EndpointCard
+                method="POST"
+                path="/api/prospection/projects"
+                description="Créer un nouveau projet de prospection"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X POST ${baseUrl || 'https://votre-domaine.com'}/api/prospection/projects \\
+  -H "Authorization: Bearer VOTRE_CLE_API" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Nouveau Projet",
+    "contact_name": "M. Dupont",
+    "amount": 50000,
+    "status": "nouveau",
+    "priority": "medium",
+    "commercial_id": 1
+  }'`}
+                response={`{
+  "data": {
+    "id": 5,
+    "name": "Nouveau Projet",
+    "contact_name": "M. Dupont",
+    "amount": 50000,
+    "status": "nouveau",
+    "priority": "medium",
+    "commercial_id": 1,
+    "created_at": "2026-03-18T10:00:00Z"
+  }
+}`}
+                params={[
+                  { name: 'name', type: 'string', desc: 'Nom du projet (obligatoire)' },
+                  { name: 'contact_name', type: 'string', desc: 'Nom du contact' },
+                  { name: 'contact_phone', type: 'string', desc: 'Téléphone du contact' },
+                  { name: 'contact_email', type: 'string', desc: 'Email du contact' },
+                  { name: 'description', type: 'string', desc: 'Description du projet' },
+                  { name: 'amount', type: 'number', desc: 'Montant estimé' },
+                  { name: 'status', type: 'string', desc: 'nouveau, contact, devis, negociation, gagne, reporte, en_attente, annule' },
+                  { name: 'priority', type: 'string', desc: 'low, medium, high' },
+                  { name: 'commercial_id', type: 'number', desc: 'ID du commercial assigné' },
+                  { name: 'due_date', type: 'string (YYYY-MM-DD)', desc: "Date d'échéance" },
+                ]}
+              />
+              <EndpointCard
+                method="GET"
+                path="/api/prospection/projects/{id}"
+                description="Obtenir un projet par son ID"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X GET ${baseUrl || 'https://votre-domaine.com'}/api/prospection/projects/1 \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "data": {
+    "id": 1,
+    "name": "Projet Résidence Bord de Mer",
+    "contact_name": "M. Martin",
+    "amount": 150000,
+    "status": "devis",
+    "priority": "high",
+    "commercial_id": 2,
+    "commercials": { "name": "Marie Martin" }
+  }
+}`}
+              />
+              <EndpointCard
+                method="PATCH"
+                path="/api/prospection/projects/{id}"
+                description="Modifier un projet (closed_at auto-rempli si status=gagne)"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X PATCH ${baseUrl || 'https://votre-domaine.com'}/api/prospection/projects/1 \\
+  -H "Authorization: Bearer VOTRE_CLE_API" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "status": "gagne",
+    "amount": 175000
+  }'`}
+                response={`{
+  "data": {
+    "id": 1,
+    "name": "Projet Résidence Bord de Mer",
+    "status": "gagne",
+    "amount": 175000,
+    "closed_at": "2026-03-18T14:30:00Z"
+  }
+}`}
+              />
+              <EndpointCard
+                method="DELETE"
+                path="/api/prospection/projects/{id}"
+                description="Supprimer un projet de prospection"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X DELETE ${baseUrl || 'https://votre-domaine.com'}/api/prospection/projects/1 \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "message": "Projet de prospection supprimé."
+}`}
+              />
+            </div>
+          </div>
+
+          {/* Prospection Objectives Endpoints */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: 'var(--color-text-tertiary)' }}>
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+              Prospection — Objectifs
+            </h3>
+            <div className="space-y-3">
+              <EndpointCard
+                method="GET"
+                path="/api/prospection/objectives"
+                description="Obtenir les objectifs de prospection"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X GET ${baseUrl || 'https://votre-domaine.com'}/api/prospection/objectives \\
+  -H "Authorization: Bearer VOTRE_CLE_API"`}
+                response={`{
+  "data": {
+    "id": 1,
+    "target_closed_contracts": 10,
+    "target_revenue": 500000,
+    "target_total_contract_price": 1000000,
+    "contract_amount_1": 50000,
+    "contract_amount_2": 100000,
+    "contract_amount_3": 200000,
+    "contract_amount_4": null,
+    "updated_at": "2026-03-17T10:00:00Z"
+  }
+}`}
+              />
+              <EndpointCard
+                method="PATCH"
+                path="/api/prospection/objectives"
+                description="Modifier les objectifs de prospection"
+                baseUrl={baseUrl}
+                copied={copied}
+                onCopy={copyText}
+                example={`curl -X PATCH ${baseUrl || 'https://votre-domaine.com'}/api/prospection/objectives \\
+  -H "Authorization: Bearer VOTRE_CLE_API" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "target_closed_contracts": 15,
+    "target_revenue": 750000
+  }'`}
+                response={`{
+  "data": {
+    "id": 1,
+    "target_closed_contracts": 15,
+    "target_revenue": 750000,
+    "target_total_contract_price": 1000000,
+    "updated_at": "2026-03-18T14:30:00Z"
+  }
+}`}
+                params={[
+                  { name: 'target_closed_contracts', type: 'number', desc: 'Objectif de contrats fermés' },
+                  { name: 'target_revenue', type: 'number', desc: "Objectif de chiffre d'affaires" },
+                  { name: 'target_total_contract_price', type: 'number', desc: 'Objectif de prix total des contrats' },
+                  { name: 'contract_amount_1', type: 'number', desc: 'Montant contrat 1' },
+                  { name: 'contract_amount_2', type: 'number', desc: 'Montant contrat 2' },
+                  { name: 'contract_amount_3', type: 'number', desc: 'Montant contrat 3' },
+                  { name: 'contract_amount_4', type: 'number', desc: 'Montant contrat 4' },
+                ]}
+              />
+            </div>
+          </div>
+
           {/* Response codes */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: 'var(--color-text-tertiary)' }}>

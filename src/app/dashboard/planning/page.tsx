@@ -126,9 +126,36 @@ export default function PlanningPage() {
     setStatus('Planning réinitialisé.')
   }
 
+  const allCommercialNames = commercials
+    .filter((c) => c.is_active_in_planning !== false)
+    .map((c) => c.name)
+
   const getColor = (name: string) => {
-    const idx = activePeople.indexOf(name)
+    const idx = allCommercialNames.indexOf(name)
     return idx >= 0 ? COMMERCIAL_COLORS[idx % COMMERCIAL_COLORS.length] : '#f1f5f9'
+  }
+
+  const updateEntryAssignee = async (weekIndex: number, entryIndex: number, newAssignee: string) => {
+    const updated = planning.map((w) => {
+      if (w.weekIndex !== weekIndex) return w
+      return {
+        ...w,
+        entries: w.entries.map((e, i) =>
+          i === entryIndex ? { ...e, assignee: newAssignee } : e
+        ),
+      }
+    })
+    setPlanning(updated)
+
+    try {
+      await supabase.from('planning_state').upsert({
+        id: 1,
+        planning_data: updated,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+    } catch (err) {
+      console.error('Error saving assignee change:', err)
+    }
   }
 
   const visibleWeeks =
@@ -385,12 +412,16 @@ export default function PlanningPage() {
                     <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>{entry.shiftLabel}</td>
                     <td className="px-4 py-2.5" style={{ color: 'var(--color-text-tertiary)' }}>{entry.timeRange}</td>
                     <td className="px-4 py-2.5">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-medium"
-                        style={{ backgroundColor: getColor(entry.assignee) + '40', color: 'var(--color-text-primary)' }}
+                      <select
+                        value={entry.assignee}
+                        onChange={(e) => updateEntryAssignee(week.weekIndex, i, e.target.value)}
+                        className="px-3 py-1 rounded-full text-xs font-medium border-none cursor-pointer focus:ring-2 focus:ring-red-300 outline-none"
+                        style={{ backgroundColor: getColor(entry.assignee) + '40', color: 'var(--color-text-primary)', appearance: 'none', WebkitAppearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23666\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '24px' }}
                       >
-                        {entry.assignee}
-                      </span>
+                        {allCommercialNames.map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
                     </td>
                   </tr>
                 ))}
