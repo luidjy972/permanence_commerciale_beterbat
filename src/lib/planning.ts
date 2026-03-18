@@ -71,9 +71,11 @@ export function buildPlanning(
   people: string[],
   startIndex: number,
   planningWeeks: number,
-  rotationMode: 'weekly' | 'monthly'
+  rotationMode: 'weekly' | 'monthly',
+  weekIndexOffset: number = 0
 ): PlanningWeek[] {
   return Array.from({ length: planningWeeks }, (_, weekOffset) => {
+    const effectiveOffset = weekIndexOffset + weekOffset
     const currentWeekStart = addDays(weekStart, weekOffset * 7)
     const currentWeekEnd = addDays(currentWeekStart, 4)
     const weekNumber = getISOWeekNumber(currentWeekStart)
@@ -81,10 +83,10 @@ export function buildPlanning(
     let offPersonIndex = -1
     if (people.length > 5) {
       if (rotationMode === 'monthly') {
-        const monthOffset = Math.floor(weekOffset / 4)
+        const monthOffset = Math.floor(effectiveOffset / 4)
         offPersonIndex = (startIndex + monthOffset) % people.length
       } else {
-        offPersonIndex = (startIndex + weekOffset) % people.length
+        offPersonIndex = (startIndex + effectiveOffset) % people.length
       }
     }
 
@@ -95,7 +97,7 @@ export function buildPlanning(
         : people.filter((_, i) => i !== offPersonIndex)
 
     const week = {
-      weekIndex: weekOffset,
+      weekIndex: effectiveOffset,
       weekNumber,
       weekStart: currentWeekStart,
       weekEnd: currentWeekEnd,
@@ -104,7 +106,7 @@ export function buildPlanning(
       entries: [] as PlanningEntry[],
     }
 
-    week.entries = buildWeekEntries(week, weekOffset)
+    week.entries = buildWeekEntries(week, effectiveOffset)
     return week
   })
 }
@@ -133,4 +135,4 @@ export function formatFrenchDate(dateString: string): string {
   }).format(new Date(`${dateString}T12:00:00`))
 }
 
-export { getISOWeekNumber }
+export { addDays, getISOWeekNumber }

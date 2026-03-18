@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { buildPlanning, getDefaultMonday, formatShortDate, formatFrenchDate, getISOWeekNumber } from '@/lib/planning'
+import { buildPlanning, getDefaultMonday, formatShortDate, formatFrenchDate, getISOWeekNumber, addDays } from '@/lib/planning'
 import type { Commercial, PlanningWeek } from '@/lib/types'
 import {
   CalendarDays,
@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Eye,
   Loader2,
+  Plus,
 } from 'lucide-react'
 
 const COMMERCIAL_COLORS = [
@@ -124,6 +125,41 @@ export default function PlanningPage() {
       console.error('Error resetting:', err)
     }
     setStatus('Planning réinitialisé.')
+  }
+
+  const addNextWeek = async () => {
+    if (!activePeople.length || !planning.length) return
+    setGenerating(true)
+
+    const lastWeek = planning[planning.length - 1]
+    const nextWeekStart = addDays(lastWeek.weekStart, 7)
+    const weekIndexOffset = planning.length
+
+    const newWeeks = buildPlanning(
+      nextWeekStart,
+      activePeople,
+      startIndex,
+      1,
+      rotationMode,
+      weekIndexOffset
+    )
+
+    const updatedPlanning = [...planning, ...newWeeks]
+    setPlanning(updatedPlanning)
+
+    try {
+      await supabase.from('planning_state').upsert({
+        id: 1,
+        planning_data: updatedPlanning,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+      const nextOff = newWeeks[0]?.offPerson
+      setStatus(`Semaine S${newWeeks[0].weekNumber} ajoutée.${nextOff ? ` Repos : ${nextOff}` : ''}`)
+    } catch (err) {
+      console.error('Error saving:', err)
+      setStatus('Erreur lors de l\'ajout de la semaine.')
+    }
+    setGenerating(false)
   }
 
   const allCommercialNames = commercials
@@ -288,6 +324,14 @@ export default function PlanningPage() {
           {planning.length > 0 && (
             <>
               <button
+                onClick={addNextWeek}
+                disabled={generating}
+                className="btn-secondary"
+              >
+                {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Ajouter la semaine suivante
+              </button>
+              <button
                 onClick={exportCSV}
                 className="btn-secondary"
               >
@@ -391,40 +435,85 @@ export default function PlanningPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: 'var(--color-table-header)', color: 'var(--color-text-secondary)' }}>
-                  <th className="px-4 py-3 text-left font-medium">Jour</th>
-                  <th className="px-4 py-3 text-left font-medium">Date</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ width: '110px' }}>Jour</th>
+                  <th className="px-4 py-3 text-left font-medium" style={{ width: '140px' }}>Date</th>
                   <th className="px-4 py-3 text-left font-medium">Créneau</th>
                   <th className="px-4 py-3 text-left font-medium">Horaire</th>
                   <th className="px-4 py-3 text-left font-medium">Commercial</th>
                 </tr>
               </thead>
               <tbody>
-                {week.entries.map((entry, i) => (
-                  <tr key={i} className="transition-colors" style={{ borderTop: '1px solid var(--color-border)' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--color-table-row-hover)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <td className="px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-primary)' }}>{entry.dayLabel}</td>
-                    <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>{formatFrenchDate(entry.date)}</td>
-                    <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>{entry.shiftLabel}</td>
-                    <td className="px-4 py-2.5" style={{ color: 'var(--color-text-tertiary)' }}>{entry.timeRange}</td>
-                    <td className="px-4 py-2.5">
-                      <select
-                        value={entry.assignee}
-                        onChange={(e) => updateEntryAssignee(week.weekIndex, i, e.target.value)}
-                        className="px-3 py-1 rounded-full text-xs font-medium border-none cursor-pointer focus:ring-2 focus:ring-red-300 outline-none"
-                        style={{ backgroundColor: getColor(entry.assignee) + '40', color: 'var(--color-text-primary)', appearance: 'none', WebkitAppearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23666\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '24px' }}
+                {(() => {
+                  const rows = []
+                  for (let i = 0; i < week.entries.length; i++) {
+                    const entry = week.entries[i]
+                    const isFirstShift = i % 2 === 0
+                    const dayIndex = Math.floor(i / 2)
+                    const isOddDay = dayIndex % 2 === 1
+                    const dayBg = isOddDay ? 'var(--color-table-header)' : 'transparent'
+                    rows.push(
+                      <tr
+                        key={i}
+                        style={{
+                          borderTop: isFirstShift ? '2px solid var(--color-border)' : 'none',
+                          backgroundColor: dayBg,
+                        }}
                       >
-                        {allCommercialNames.map((name) => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                        {isFirstShift && (
+                          <>
+                            <td
+                              rowSpan={2}
+                              className="px-4 py-3 font-semibold"
+                              style={{
+                                color: 'var(--color-text-primary)',
+                                verticalAlign: 'middle',
+                                borderRight: '1px solid var(--color-border-light)',
+                                backgroundColor: dayBg,
+                              }}
+                            >
+                              {entry.dayLabel}
+                            </td>
+                            <td
+                              rowSpan={2}
+                              className="px-4 py-3"
+                              style={{
+                                color: 'var(--color-text-secondary)',
+                                verticalAlign: 'middle',
+                                borderRight: '1px solid var(--color-border-light)',
+                                backgroundColor: dayBg,
+                              }}
+                            >
+                              {formatFrenchDate(entry.date)}
+                            </td>
+                          </>
+                        )}
+                        <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className={`inline-block w-2 h-2 rounded-full ${entry.shiftLabel === 'Matin' ? 'bg-amber-400' : 'bg-indigo-400'}`} />
+                            {entry.shiftLabel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5" style={{ color: 'var(--color-text-tertiary)' }}>{entry.timeRange}</td>
+                        <td className="px-4 py-2.5">
+                          <select
+                            value={entry.assignee}
+                            onChange={(e) => updateEntryAssignee(week.weekIndex, i, e.target.value)}
+                            className="px-3 py-1 rounded-full text-xs font-medium border-none cursor-pointer focus:ring-2 focus:ring-red-300 outline-none"
+                            style={{ backgroundColor: getColor(entry.assignee) + '40', color: 'var(--color-text-primary)', appearance: 'none', WebkitAppearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23666\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center', paddingRight: '24px' }}
+                          >
+                            {allCommercialNames.map((name) => (
+                              <option key={name} value={name}>{name}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    )
+                  }
+                  return rows
+                })()}
               </tbody>
             </table>
           </div>

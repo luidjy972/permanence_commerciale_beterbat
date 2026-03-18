@@ -264,17 +264,23 @@
   }
 
   table tbody tr {
-    border-top: 1px solid #e5e7eb !important;
+    border-top: none !important;
   }
 
-  table tbody tr:nth-child(even) {
-    background-color: #f9fafb !important;
+  table tbody tr[style*="2px solid"] {
+    border-top: 2px solid #d1d5db !important;
   }
 
   table tbody td {
     padding: 5px 10px !important;
     color: #1f2937 !important;
     font-size: 10.5px !important;
+  }
+
+  table tbody td[rowspan] {
+    font-weight: 600 !important;
+    border-right: 1px solid #e5e7eb !important;
+    vertical-align: middle !important;
   }
 
   /* Week header bar */
