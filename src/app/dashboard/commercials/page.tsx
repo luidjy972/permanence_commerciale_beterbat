@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Commercial } from '@/lib/types'
+import type { Commercial, Agency } from '@/lib/types'
 import {
   Users,
   Plus,
@@ -24,6 +24,7 @@ export default function CommercialsPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [commercials, setCommercials] = useState<Commercial[]>([])
+  const [agencies, setAgencies] = useState<Agency[]>([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'prospect'>('all')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -43,6 +44,14 @@ export default function CommercialsPage() {
 
     if (data) setCommercials(data)
     if (error) console.error(error)
+
+    const { data: agencyData } = await supabase
+      .from('agencies')
+      .select('*')
+      .order('name', { ascending: true })
+
+    if (agencyData) setAgencies(agencyData)
+
     setLoading(false)
   }, [supabase])
 
@@ -223,13 +232,16 @@ export default function CommercialsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Agence</label>
-              <input
-                type="text"
+              <select
                 value={newCommercial.agency || ''}
                 onChange={(e) => setNewCommercial({ ...newCommercial, agency: e.target.value })}
                 className="input-field"
-                placeholder="Agence"
-              />
+              >
+                <option value="">— Aucune agence —</option>
+                {agencies.map((a) => (
+                  <option key={a.id} value={a.name}>{a.name}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Téléphone</label>
@@ -350,13 +362,16 @@ export default function CommercialsPage() {
                     className="input-field"
                     placeholder="Nom"
                   />
-                  <input
-                    type="text"
+                  <select
                     value={editData.agency || ''}
                     onChange={(e) => setEditData({ ...editData, agency: e.target.value })}
                     className="input-field"
-                    placeholder="Agence"
-                  />
+                  >
+                    <option value="">— Aucune agence —</option>
+                    {agencies.map((a) => (
+                      <option key={a.id} value={a.name}>{a.name}</option>
+                    ))}
+                  </select>
                   <input
                     type="tel"
                     value={editData.phone || ''}

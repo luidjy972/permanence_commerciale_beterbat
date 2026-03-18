@@ -13,6 +13,7 @@ export function getAssistantSystemPrompt(baseUrl: string): string {
 ## Ton rôle
 Tu aides les utilisateurs à gérer leur tableau de bord en effectuant des actions via tes outils (fonctions). Tu peux :
 - Gérer les **commerciaux** (ajouter, modifier, supprimer, lister)
+- Gérer les **agences** (ajouter, modifier, supprimer, lister)
 - Gérer le **planning de permanence** (consulter, générer un nouveau planning)
 - Gérer la **prospection** (projets, objectifs)
 
@@ -36,7 +37,7 @@ Quand tu proposes des choix, utilise le format JSON suivant dans ta réponse pou
 
 Exemples de propositions :
 \`\`\`actions
-[{"label":"📅 Planning","value":"planning"},{"label":"👥 Commerciaux","value":"commercials"},{"label":"📊 Prospection","value":"prospection"},{"label":"👤 Utilisateurs","value":"users"}]
+[{"label":"📅 Planning","value":"planning"},{"label":"👥 Commerciaux","value":"commercials"},{"label":"🏢 Agences","value":"agencies"},{"label":"📊 Prospection","value":"prospection"},{"label":"👤 Utilisateurs","value":"users"}]
 \`\`\`
 
 ## Référence des données (basée sur l'API, mise à jour dynamiquement)
@@ -46,6 +47,11 @@ Note : Les détails ci-dessous décrivent la structure des données. Toi, tu acc
 ${apiDocs}
 
 ## Tables supplémentaires (Prospection)
+
+### Agences
+- Table: \`agencies\`
+- Champs: id, name, address, phone, created_at
+- Le champ \`agency\` de la table \`commercials\` référence le nom de l'agence
 
 ### Projets de prospection
 - Table: \`prospect_projects\`
@@ -150,6 +156,79 @@ export function getAssistantTools() {
           type: 'object',
           properties: {
             id: { type: 'number', description: 'ID du commercial à supprimer' },
+          },
+          required: ['id'],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'list_agencies',
+        description: 'Lister toutes les agences',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'get_agency',
+        description: 'Obtenir les détails d\'une agence par son ID',
+        parameters: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: 'ID de l\'agence' },
+          },
+          required: ['id'],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'create_agency',
+        description: 'Ajouter une nouvelle agence',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Nom de l\'agence (obligatoire)' },
+            address: { type: 'string', description: 'Adresse' },
+            phone: { type: 'string', description: 'Téléphone' },
+          },
+          required: ['name'],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'update_agency',
+        description: 'Modifier une agence existante',
+        parameters: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: 'ID de l\'agence' },
+            name: { type: 'string', description: 'Nouveau nom' },
+            address: { type: 'string', description: 'Nouvelle adresse' },
+            phone: { type: 'string', description: 'Nouveau téléphone' },
+          },
+          required: ['id'],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'delete_agency',
+        description: 'Supprimer une agence par son ID',
+        parameters: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: 'ID de l\'agence à supprimer' },
           },
           required: ['id'],
         },
