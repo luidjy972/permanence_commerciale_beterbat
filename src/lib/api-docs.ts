@@ -242,6 +242,104 @@ DELETE ${baseUrl}/api/commercials/{id}
 
 ---
 
+### 🏢 Agences
+
+#### Lister les agences
+
+\`\`\`
+GET ${baseUrl}/api/agencies
+\`\`\`
+
+**Réponse :**
+\`\`\`json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Fort-de-France",
+      "address": "123 rue Exemple",
+      "phone": "0596 XX XX XX",
+      "created_at": "2026-01-15T10:00:00Z"
+    }
+  ]
+}
+\`\`\`
+
+---
+
+#### Ajouter une agence
+
+\`\`\`
+POST ${baseUrl}/api/agencies
+\`\`\`
+
+**Corps de la requête (JSON) :**
+\`\`\`json
+{
+  "name": "Nouvelle Agence",
+  "address": "456 rue Exemple",
+  "phone": "0596 XX XX XX"
+}
+\`\`\`
+
+**Champ obligatoire :** \`name\`
+**Champs optionnels :** \`address\`, \`phone\`
+
+---
+
+#### Obtenir une agence
+
+\`\`\`
+GET ${baseUrl}/api/agencies/{id}
+\`\`\`
+
+**Réponse :**
+\`\`\`json
+{
+  "data": {
+    "id": 1,
+    "name": "Fort-de-France",
+    "address": "123 rue Exemple",
+    "phone": "0596 XX XX XX",
+    "created_at": "2026-01-15T10:00:00Z"
+  }
+}
+\`\`\`
+
+---
+
+#### Modifier une agence
+
+\`\`\`
+PATCH ${baseUrl}/api/agencies/{id}
+\`\`\`
+
+Envoyer uniquement les champs à modifier :
+\`\`\`json
+{
+  "address": "Nouvelle adresse"
+}
+\`\`\`
+
+**Champs modifiables :** \`name\`, \`address\`, \`phone\`
+
+---
+
+#### Supprimer une agence
+
+\`\`\`
+DELETE ${baseUrl}/api/agencies/{id}
+\`\`\`
+
+**Réponse :**
+\`\`\`json
+{
+  "message": "Agence supprimée."
+}
+\`\`\`
+
+---
+
 ## Codes de réponse
 
 | Code | Signification |

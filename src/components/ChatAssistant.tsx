@@ -44,6 +44,7 @@ function parseActions(content: string): { text: string; actions: ActionButton[] 
 function formatTable(table: string): string {
   const labels: Record<string, string> = {
     commercials: 'Commerciaux',
+    agencies: 'Agences',
     prospect_projects: 'Projets prospection',
     prospection_objectives: 'Objectifs prospection',
     planning_state: 'Planning',

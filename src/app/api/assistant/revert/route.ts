@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const allowedTables = ['commercials', 'prospect_projects', 'prospection_objectives', 'planning_state']
+    const allowedTables = ['commercials', 'agencies', 'prospect_projects', 'prospection_objectives', 'planning_state']
 
     if (!allowedTables.includes(edit.table)) {
       return NextResponse.json({ error: 'Table non autorisée' }, { status: 400 })
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         const insertData = { ...edit.previous_data }
         // For tables with identity columns, we need to handle id carefully
         // Supabase GENERATED ALWAYS AS IDENTITY doesn't allow inserting with id
-        if (edit.table === 'prospect_projects') {
+        if (edit.table === 'prospect_projects' || edit.table === 'agencies') {
           delete insertData.id
         }
         const { error } = await supabase.from(edit.table).insert(insertData)

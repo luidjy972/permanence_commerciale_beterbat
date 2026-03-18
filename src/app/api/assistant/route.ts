@@ -59,6 +59,47 @@ async function executeTool(
       }
     }
 
+    // ===== AGENCIES =====
+    case 'list_agencies': {
+      const { data, error } = await supabase.from('agencies').select('*').order('name')
+      if (error) throw new Error(error.message)
+      return { result: data }
+    }
+    case 'get_agency': {
+      const { data, error } = await supabase.from('agencies').select('*').eq('id', args.id).single()
+      if (error) throw new Error(error.message)
+      return { result: data }
+    }
+    case 'create_agency': {
+      const { data, error } = await supabase.from('agencies').insert(args).select().single()
+      if (error) throw new Error(error.message)
+      return {
+        result: data,
+        editRecord: { type: 'create', table: 'agencies', record_id: data.id, new_data: data },
+      }
+    }
+    case 'update_agency': {
+      const id = args.id
+      const updates = { ...args }
+      delete updates.id
+      const { data: before } = await supabase.from('agencies').select('*').eq('id', id).single()
+      const { data, error } = await supabase.from('agencies').update(updates).eq('id', id).select().single()
+      if (error) throw new Error(error.message)
+      return {
+        result: data,
+        editRecord: { type: 'update', table: 'agencies', record_id: data.id, previous_data: before, new_data: data },
+      }
+    }
+    case 'delete_agency': {
+      const { data: before } = await supabase.from('agencies').select('*').eq('id', args.id).single()
+      const { error } = await supabase.from('agencies').delete().eq('id', args.id)
+      if (error) throw new Error(error.message)
+      return {
+        result: { message: 'Agence supprimée', id: args.id },
+        editRecord: { type: 'delete', table: 'agencies', record_id: args.id as number, previous_data: before },
+      }
+    }
+
     // ===== PLANNING =====
     case 'get_planning': {
       const { data, error } = await supabase.from('planning_state').select('*').eq('id', 1).single()
