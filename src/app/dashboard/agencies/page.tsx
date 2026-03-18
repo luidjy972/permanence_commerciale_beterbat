@@ -367,7 +367,7 @@ export default function AgenciesPage() {
               <div className="pt-3" style={{ borderTop: '1px solid var(--color-border)' }}>
                 <div className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   <Users className="h-3.5 w-3.5" style={{ color: 'var(--color-text-tertiary)' }} />
-                  {count} commercial{count > 1 ? 'x' : ''} rattaché{count > 1 ? 's' : ''}
+                  {count} commercia{count > 1 ? 'ux' : 'l'} rattaché{count > 1 ? 's' : ''}
                 </div>
               </div>
             </div>
