@@ -145,11 +145,14 @@ export default function PlanningPage() {
     )
 
     const updatedPlanning = [...planning, ...newWeeks]
+    const updatedWeeks = planningWeeks + newWeeks.length
     setPlanning(updatedPlanning)
+    setPlanningWeeks(updatedWeeks)
 
     try {
       await supabase.from('planning_state').upsert({
         id: 1,
+        planning_weeks: updatedWeeks,
         planning_data: updatedPlanning,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'id' })
