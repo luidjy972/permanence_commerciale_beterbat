@@ -13,10 +13,10 @@ const apps = [
   {
     name: 'Calculatrice Rentabilité',
     description: 'Calculez la rentabilité locative brute et nette de vos biens immobiliers en quelques clics.',
-    href: '#',
+    href: '/dashboard/applications/calculatrice-rentabilite',
     icon: PieChart,
     gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-    available: false,
+    available: true,
   },
   {
     name: 'Simulateur de Crédit',
