@@ -21,10 +21,10 @@ const apps = [
   {
     name: 'Simulateur de Crédit',
     description: 'Estimez les mensualités, le coût total et le taux d\'endettement pour vos projets de financement.',
-    href: '#',
+    href: '/dashboard/applications/simulateur-credit',
     icon: CreditCard,
     gradient: 'linear-gradient(135deg, #22c55e, #16a34a)',
-    available: false,
+    available: true,
   },
 ]
 
