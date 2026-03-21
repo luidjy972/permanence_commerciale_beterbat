@@ -51,15 +51,15 @@ export default function Sidebar({ isOpen, collapsed, onClose, onToggleCollapse }
       <div className="flex items-center justify-between px-4 py-5 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         {!collapsed && (
           <img
-            src="https://www.beterbat.com/front/theme/images/logos/logo-beterbat.gif"
-            alt="Beterbat"
+            src="/logo.png"
+            alt="Maisons Beterbat"
             className="h-10"
           />
         )}
         {collapsed && (
           <img
-            src="https://www.beterbat.com/front/theme/images/logos/logo-beterbat.gif"
-            alt="Beterbat"
+            src="/logo-icon.png"
+            alt="Maisons Beterbat"
             className="h-8 mx-auto"
             style={{ objectFit: 'contain', maxWidth: '40px' }}
           />

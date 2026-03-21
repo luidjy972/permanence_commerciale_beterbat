@@ -71,8 +71,8 @@ export default function LoginPage() {
         >
           <div className="text-center mb-8">
             <img
-              src="https://www.beterbat.com/front/theme/images/logos/logo-beterbat.gif"
-              alt="Beterbat"
+              src="/logo.png"
+              alt="Maisons Beterbat"
               className="h-14 mx-auto mb-4"
             />
             <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>Bienvenue</h1>

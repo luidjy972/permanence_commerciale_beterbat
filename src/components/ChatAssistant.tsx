@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { MessageCircle, X, Send, RotateCcw, ChevronDown, Bot, User, Trash2, Loader2 } from 'lucide-react'
 
 interface Message {
@@ -173,13 +174,13 @@ export default function ChatAssistant() {
         </div>
         <div className={`max-w-[80%] space-y-2 ${isUser ? 'items-end' : 'items-start'}`}>
           <div
-            className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+            className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
               isUser
-                ? 'bg-gradient-to-br from-red-500 to-red-700 text-white rounded-tr-md'
-                : 'bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-tl-md'
+                ? 'bg-gradient-to-br from-red-500 to-red-700 text-white rounded-tr-md whitespace-pre-wrap'
+                : 'bg-[var(--color-bg-card)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-tl-md prose-chat'
             }`}
           >
-            {text}
+            {isUser ? text : <ReactMarkdown>{text}</ReactMarkdown>}
           </div>
           {actions.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
