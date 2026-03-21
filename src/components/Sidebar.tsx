@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Users,
   TrendingUp,
+  Grid3X3,
   Settings,
   KeyRound,
   X,
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Planning', href: '/dashboard/planning', icon: CalendarDays },
   { name: 'Commerciaux', href: '/dashboard/commercials', icon: Users },
   { name: 'Prospection', href: '/dashboard/prospection', icon: TrendingUp },
+  { name: 'Applications', href: '/dashboard/applications', icon: Grid3X3 },
   { name: 'Utilisateurs', href: '/dashboard/users', icon: Settings },
   { name: 'Paramètres API', href: '/dashboard/settings', icon: KeyRound },
 ]
