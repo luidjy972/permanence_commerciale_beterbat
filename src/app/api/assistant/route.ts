@@ -223,6 +223,47 @@ async function executeTool(
       return { result }
     }
 
+    // ===== APP SPECIFICATIONS =====
+    case 'save_app_specification': {
+      const { title, slug, description, spec_content, status } = args as {
+        title: string; slug: string; description?: string; spec_content: string; status?: string
+      }
+      const { data, error } = await supabase
+        .from('app_specifications')
+        .upsert(
+          {
+            title,
+            slug,
+            description: description || null,
+            spec_content,
+            status: status || 'draft',
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'slug' }
+        )
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return { result: data }
+    }
+    case 'list_app_specifications': {
+      const { data, error } = await supabase
+        .from('app_specifications')
+        .select('id, title, slug, description, status, created_at, updated_at')
+        .order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return { result: data }
+    }
+    case 'get_app_specification': {
+      const { data, error } = await supabase
+        .from('app_specifications')
+        .select('*')
+        .eq('id', args.id)
+        .single()
+      if (error) throw new Error(error.message)
+      return { result: data }
+    }
+
     default:
       throw new Error(`Fonction inconnue: ${name}`)
   }

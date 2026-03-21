@@ -22,7 +22,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<AppUser[]>([])
   const [currentAuthId, setCurrentAuthId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [editData, setEditData] = useState({ name: '', role: 'user' as 'admin' | 'user' })
+  const [editData, setEditData] = useState({ name: '', email: '', role: 'user' as 'admin' | 'user' })
   const [changingPasswordId, setChangingPasswordId] = useState<number | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
@@ -83,7 +83,7 @@ export default function UsersPage() {
 
   const startEdit = (u: AppUser) => {
     setEditingId(u.id)
-    setEditData({ name: u.name, role: u.role })
+    setEditData({ name: u.name, email: u.email, role: u.role })
   }
 
   const saveEdit = async (u: AppUser) => {
@@ -91,11 +91,17 @@ export default function UsersPage() {
       showStatus('Le nom est obligatoire.', true)
       return
     }
+    if (!editData.email.trim()) {
+      showStatus("L'email est obligatoire.", true)
+      return
+    }
     try {
+      const isSelf = u.auth_id === currentAuthId
       const { error } = await supabase.rpc('update_app_user', {
         p_auth_id: u.auth_id,
         p_name: editData.name.trim(),
-        p_role: editData.role,
+        p_role: isSelf ? u.role : editData.role,
+        p_email: editData.email.trim() !== u.email ? editData.email.trim() : null,
       })
       if (error) throw error
       setEditingId(null)
@@ -262,18 +268,38 @@ export default function UsersPage() {
                           value={editData.name}
                           onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                           className="input-field !py-1.5"
+                          placeholder="Nom"
                         />
                       </td>
-                      <td className="px-6 py-3" style={{ color: 'var(--color-text-secondary)' }}>{u.email}</td>
                       <td className="px-6 py-3">
-                        <select
-                          value={editData.role}
-                          onChange={(e) => setEditData({ ...editData, role: e.target.value as 'admin' | 'user' })}
+                        <input
+                          type="email"
+                          value={editData.email}
+                          onChange={(e) => setEditData({ ...editData, email: e.target.value })}
                           className="input-field !py-1.5"
-                        >
-                          <option value="user">Utilisateur</option>
-                          <option value="admin">Administrateur</option>
-                        </select>
+                          placeholder="email@exemple.com"
+                        />
+                      </td>
+                      <td className="px-6 py-3">
+                        {isSelf ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                            style={u.role === 'admin'
+                              ? { backgroundColor: 'rgba(147, 51, 234, 0.15)', color: '#a855f7' }
+                              : { backgroundColor: 'var(--color-accent-light)', color: 'var(--color-text-secondary)' }
+                            }>
+                            {u.role === 'admin' ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
+                            {u.role === 'admin' ? 'Admin' : 'Utilisateur'}
+                          </span>
+                        ) : (
+                          <select
+                            value={editData.role}
+                            onChange={(e) => setEditData({ ...editData, role: e.target.value as 'admin' | 'user' })}
+                            className="input-field !py-1.5"
+                          >
+                            <option value="user">Utilisateur</option>
+                            <option value="admin">Administrateur</option>
+                          </select>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -345,24 +371,24 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-3 text-right">
-                      {!isSelf && (
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => startEdit(u)}
-                            className="p-1.5 rounded-lg transition-colors"
-                            style={{ color: 'var(--color-text-tertiary)' }}
-                            title="Modifier"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => startChangePassword(u.id)}
-                            className="p-1.5 rounded-lg transition-colors"
-                            style={{ color: 'var(--color-text-tertiary)' }}
-                            title="Changer le mot de passe"
-                          >
-                            <Key className="h-4 w-4" />
-                          </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => startEdit(u)}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ color: 'var(--color-text-tertiary)' }}
+                          title="Modifier"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => startChangePassword(u.id)}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ color: 'var(--color-text-tertiary)' }}
+                          title="Changer le mot de passe"
+                        >
+                          <Key className="h-4 w-4" />
+                        </button>
+                        {!isSelf && (
                           <button
                             onClick={() => deleteUser(u)}
                             className="p-1.5 rounded-lg transition-colors"
@@ -371,8 +397,8 @@ export default function UsersPage() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )

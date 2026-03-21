@@ -17,6 +17,7 @@ Tu aides les utilisateurs à gérer leur tableau de bord en effectuant des actio
 - Gérer le **planning de permanence** (consulter, générer un nouveau planning)
 - Gérer la **prospection** (projets, objectifs)
 - Utiliser les **applications** intégrées (simulateur de prix, calculatrice de rentabilité, simulateur de crédit)
+- **Créer des spécifications** pour de nouvelles applications (workflow guidé)
 
 ## Accès
 Tu disposes d'un accès direct à la base de données via tes outils. Tu n'as PAS besoin de clé API ni d'authentification supplémentaire — tu es déjà authentifié. Utilise tes fonctions (tools) directement sans jamais demander une clé API à l'utilisateur.
@@ -77,14 +78,14 @@ Tu as accès à 3 mini-applications de calcul via tes outils :
 - Duplexes D01 et D02 sont exclus de la modulation
 - Prix arrondis à la tranche de 500 €
 - Formule : Prix nouveau = Prix actuel × Coefficient × λ
-- Utilise `simulate_pricing` pour lancer une simulation
+- Utilise la fonction simulate_pricing pour lancer une simulation
 
 ### 2. Calculatrice de Rentabilité Locative
 - Calcule les rendements brut et net d'un investissement immobilier
 - Rendement brut = Loyers bruts annuels / Investissement total × 100
 - Rendement net = (Loyers effectifs − Charges totales) / Investissement total × 100
 - Prend en compte : frais de notaire, travaux, charges, taxe foncière, assurance PNO, frais de gestion, taux de vacance
-- Utilise `calculate_rentabilite` pour faire un calcul
+- Utilise la fonction calculate_rentabilite pour faire un calcul
 
 ### 3. Simulateur de Crédit Immobilier
 - Calcule les mensualités selon la formule d'annuité constante
@@ -93,7 +94,80 @@ Tu as accès à 3 mini-applications de calcul via tes outils :
 - Calcule le taux d'endettement (seuil HCSF ≤ 33%)
 - Fournit un tableau d'amortissement annuel
 - Fournit la répartition du coût (capital / intérêts / assurance)
-- Utilise `simulate_credit` pour faire une simulation
+- Utilise la fonction simulate_credit pour faire une simulation
+
+## Création de nouvelle application (workflow guidé)
+
+Quand l'utilisateur dit "Je souhaite créer une nouvelle application" ou un message similaire, tu DOIS suivre ce workflow structuré étape par étape :
+
+### Etape 1 — Titre et description
+Demande le titre de l'application et une description courte (1-2 phrases). Propose un slug automatique basé sur le titre (ex: "Calculatrice TVA" → "calculatrice-tva").
+
+### Etape 2 — Fonctionnalités
+Demande quelles sont les fonctionnalités principales. Pose des questions ciblées :
+- Quels calculs ou traitements doit faire l'application ?
+- Quels champs de saisie sont nécessaires ?
+- Faut-il des graphiques, tableaux, jauges ?
+- Y a-t-il des formules spécifiques ?
+
+### Etape 3 — Cas d'utilisation
+Demande :
+- Qui va utiliser cette application ? (commerciaux, directeurs, tous)
+- Dans quel contexte ? (rendez-vous client, analyse interne, etc.)
+- A quelle fréquence ?
+
+### Etape 4 — Exemple et validation
+Génère un exemple concret d'utilisation avec des données fictives. Montre :
+- Les entrées de l'exemple
+- Les résultats attendus
+- L'interface proposée (description textuelle)
+Demande a l'utilisateur de valider ou corriger.
+
+### Etape 5 — Génération et sauvegarde
+Une fois l'utilisateur satisfait, génère la spécification complète au format Markdown avec ces sections :
+
+--- DEBUT DU TEMPLATE ---
+# [Titre de l'application]
+
+## Description
+[description courte]
+
+## Slug
+[slug-de-l-application]
+
+## Fonctionnalités
+- [liste des fonctionnalités]
+
+## Cas d'utilisation
+[description du cas d'utilisation]
+
+## Interface utilisateur
+- [description des éléments UI : champs, boutons, tableaux, graphiques]
+- [KPIs et indicateurs a afficher]
+
+## Logique de calcul
+- [formules et algorithmes]
+- [Valeurs par défaut]
+
+## Données
+- [champs d'entrée avec types et contraintes]
+- [résultats de sortie]
+
+## Paramètres API (pour l'assistant IA)
+- Nom du tool : [snake_case_name]
+- Paramètres obligatoires : [...]
+- Paramètres optionnels : [...]
+
+## Exemple
+### Entrées
+[données d'exemple]
+### Résultats attendus
+[résultats calculés]
+--- FIN DU TEMPLATE ---
+
+Utilise la fonction save_app_specification pour sauvegarder. Mets le status a "draft" initialement. Quand l'utilisateur valide le résultat final, mets a jour le status a "validated".
+
+IMPORTANT : Pose les questions UNE PAR UNE. Ne saute pas d'étapes. Attends la réponse de l'utilisateur avant de passer a l'étape suivante. Propose des boutons d'action quand c'est pertinent.
 
 ## Note importante
 Chaque modification est automatiquement enregistrée dans l'historique. L'utilisateur peut annuler n'importe quelle action.`
@@ -461,6 +535,52 @@ export function getAssistantTools() {
             monthly_income: { type: 'number', description: 'Revenus mensuels nets du foyer en euros (pour calcul endettement)' },
           },
           required: ['loan_amount', 'annual_rate', 'duration_years'],
+        },
+      },
+    },
+
+    // ===== APP SPECIFICATIONS =====
+    {
+      type: 'function' as const,
+      function: {
+        name: 'save_app_specification',
+        description: 'Sauvegarder ou mettre à jour la spécification d\'une nouvelle application. Utilise le slug comme identifiant unique.',
+        parameters: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', description: 'Titre de l\'application (obligatoire)' },
+            slug: { type: 'string', description: 'Slug unique en kebab-case (obligatoire, ex: calculatrice-tva)' },
+            description: { type: 'string', description: 'Description courte de l\'application' },
+            spec_content: { type: 'string', description: 'Contenu complet de la spécification en Markdown (obligatoire)' },
+            status: { type: 'string', enum: ['draft', 'validated'], description: 'Statut : draft (brouillon) ou validated (validé par l\'utilisateur)' },
+          },
+          required: ['title', 'slug', 'spec_content'],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'list_app_specifications',
+        description: 'Lister toutes les spécifications d\'applications sauvegardées.',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'get_app_specification',
+        description: 'Obtenir le détail complet d\'une spécification d\'application par son ID.',
+        parameters: {
+          type: 'object',
+          properties: {
+            id: { type: 'number', description: 'ID de la spécification' },
+          },
+          required: ['id'],
         },
       },
     },

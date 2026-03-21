@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Calculator, CreditCard, PieChart, Lock } from 'lucide-react'
+import { Calculator, CreditCard, PieChart, Lock, Plus, Sparkles } from 'lucide-react'
 
 const apps = [
   {
@@ -31,16 +31,47 @@ const apps = [
 export default function ApplicationsPage() {
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          Applications
-        </h1>
-        <p className="mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-          Accédez aux outils et mini-applications intégrées
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            Applications
+          </h1>
+          <p className="mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+            Accédez aux outils et mini-applications intégrées
+          </p>
+        </div>
+        <Link
+          href="/dashboard/applications/new"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-red-500/20 hover:scale-[1.02]"
+          style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)' }}
+        >
+          <Sparkles className="h-4 w-4" />
+          Créer une application
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {/* New Application card */}
+        <Link href="/dashboard/applications/new" className="block">
+          <div
+            className="card p-6 transition-all h-full flex flex-col items-center justify-center text-center hover:scale-[1.02] cursor-pointer border-2 border-dashed min-h-[200px]"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+              style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)' }}
+            >
+              <Plus className="h-6 w-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-base mb-1" style={{ color: 'var(--color-text-primary)' }}>
+              Nouvelle application
+            </h3>
+            <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+              L&apos;assistant IA vous guidera pour créer la spécification
+            </p>
+          </div>
+        </Link>
+
         {apps.map((app) => {
           const content = (
             <div

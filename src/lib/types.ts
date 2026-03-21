@@ -94,3 +94,14 @@ export interface ProspectionObjectives {
   contract_amount_4: number | null
   updated_at: string
 }
+
+export interface AppSpecification {
+  id?: number
+  title: string
+  slug: string
+  description: string | null
+  status: 'draft' | 'validated' | 'implemented'
+  spec_content: string
+  created_at?: string
+  updated_at?: string
+}
