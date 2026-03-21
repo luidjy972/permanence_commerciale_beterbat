@@ -16,6 +16,7 @@ Tu aides les utilisateurs à gérer leur tableau de bord en effectuant des actio
 - Gérer les **agences** (ajouter, modifier, supprimer, lister)
 - Gérer le **planning de permanence** (consulter, générer un nouveau planning)
 - Gérer la **prospection** (projets, objectifs)
+- Utiliser les **applications** intégrées (simulateur de prix, calculatrice de rentabilité, simulateur de crédit)
 
 ## Accès
 Tu disposes d'un accès direct à la base de données via tes outils. Tu n'as PAS besoin de clé API ni d'authentification supplémentaire — tu es déjà authentifié. Utilise tes fonctions (tools) directement sans jamais demander une clé API à l'utilisateur.
@@ -37,7 +38,7 @@ Quand tu proposes des choix, utilise le format JSON suivant dans ta réponse pou
 
 Exemples de propositions :
 \`\`\`actions
-[{"label":"📅 Planning","value":"planning"},{"label":"👥 Commerciaux","value":"commercials"},{"label":"🏢 Agences","value":"agencies"},{"label":"📊 Prospection","value":"prospection"},{"label":"👤 Utilisateurs","value":"users"}]
+[{"label":"📅 Planning","value":"planning"},{"label":"👥 Commerciaux","value":"commercials"},{"label":"🏢 Agences","value":"agencies"},{"label":"📊 Prospection","value":"prospection"},{"label":"🏠 Applications","value":"applications"},{"label":"👤 Utilisateurs","value":"users"}]
 \`\`\`
 
 ## Référence des données (basée sur l'API, mise à jour dynamiquement)
@@ -62,6 +63,37 @@ ${apiDocs}
 ### Objectifs de prospection
 - Table: \`prospection_objectives\` (singleton, id=1)
 - Champs: target_closed_contracts, target_revenue, target_total_contract_price, contract_amount_1-4
+
+## Applications intégrées (Outils de calcul)
+
+Tu as accès à 3 mini-applications de calcul via tes outils :
+
+### 1. Simulateur de Prix – Résidence Vue des Îlets
+- Programme immobilier de 42 lots (Trois-Îlets, Martinique)
+- 3 bâtiments (A, B, C), étages R-1, RDC, R+1, R+2 + 2 Duplex
+- Total programme : 13 018 500 €
+- Permet de moduler les prix par étage via des coefficients (0.80 à 1.20)
+- Le total global reste verrouillé (redistribution à somme constante via facteur λ)
+- Duplexes D01 et D02 sont exclus de la modulation
+- Prix arrondis à la tranche de 500 €
+- Formule : Prix nouveau = Prix actuel × Coefficient × λ
+- Utilise `simulate_pricing` pour lancer une simulation
+
+### 2. Calculatrice de Rentabilité Locative
+- Calcule les rendements brut et net d'un investissement immobilier
+- Rendement brut = Loyers bruts annuels / Investissement total × 100
+- Rendement net = (Loyers effectifs − Charges totales) / Investissement total × 100
+- Prend en compte : frais de notaire, travaux, charges, taxe foncière, assurance PNO, frais de gestion, taux de vacance
+- Utilise `calculate_rentabilite` pour faire un calcul
+
+### 3. Simulateur de Crédit Immobilier
+- Calcule les mensualités selon la formule d'annuité constante
+- Mensualité = [Capital × Taux × (1+Taux)^n] / [(1+Taux)^n − 1]
+- Prend en compte l'assurance emprunteur et l'apport personnel
+- Calcule le taux d'endettement (seuil HCSF ≤ 33%)
+- Fournit un tableau d'amortissement annuel
+- Fournit la répartition du coût (capital / intérêts / assurance)
+- Utilise `simulate_credit` pour faire une simulation
 
 ## Note importante
 Chaque modification est automatiquement enregistrée dans l'historique. L'utilisateur peut annuler n'importe quelle action.`
@@ -368,6 +400,67 @@ export function getAssistantTools() {
             contract_amount_4: { type: 'number', description: 'Montant contrat 4' },
           },
           required: [],
+        },
+      },
+    },
+
+    // ===== APPLICATIONS =====
+    {
+      type: 'function' as const,
+      function: {
+        name: 'simulate_pricing',
+        description: 'Simuler les prix de la Résidence Vue des Îlets en ajustant les coefficients par étage. Le total global reste verrouillé à 13 018 500 €. Les coefficients vont de 0.80 à 1.20 (1.0 = prix actuel).',
+        parameters: {
+          type: 'object',
+          properties: {
+            coeff_r_minus_1: { type: 'number', description: 'Coefficient pour R-1 / Sous-sol (0.80 à 1.20, défaut: 1.0)' },
+            coeff_rdc: { type: 'number', description: 'Coefficient pour RDC / Rez-de-chaussée (0.80 à 1.20, défaut: 1.0)' },
+            coeff_r_plus_1: { type: 'number', description: 'Coefficient pour R+1 / 1er étage (0.80 à 1.20, défaut: 1.0)' },
+            coeff_r_plus_2: { type: 'number', description: 'Coefficient pour R+2 / 2ème étage (0.80 à 1.20, défaut: 1.0)' },
+            batiment: { type: 'string', enum: ['all', 'A', 'B', 'C'], description: 'Filtrer par bâtiment (défaut: all)' },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'calculate_rentabilite',
+        description: 'Calculer la rentabilité locative brute et nette d\'un bien immobilier.',
+        parameters: {
+          type: 'object',
+          properties: {
+            purchase_price: { type: 'number', description: 'Prix d\'achat du bien en euros (obligatoire)' },
+            monthly_rent: { type: 'number', description: 'Loyer mensuel en euros (obligatoire)' },
+            notary_fees_pct: { type: 'number', description: 'Frais de notaire en % (défaut: 8)' },
+            renovation_cost: { type: 'number', description: 'Coût des travaux en euros (défaut: 0)' },
+            monthly_charges: { type: 'number', description: 'Charges mensuelles en euros (défaut: 0)' },
+            annual_tax: { type: 'number', description: 'Taxe foncière annuelle en euros (défaut: 0)' },
+            annual_insurance: { type: 'number', description: 'Assurance PNO annuelle en euros (défaut: 0)' },
+            management_fee_pct: { type: 'number', description: 'Frais de gestion en % des loyers (défaut: 0)' },
+            vacancy_rate_pct: { type: 'number', description: 'Taux de vacance locative en % (défaut: 0)' },
+          },
+          required: ['purchase_price', 'monthly_rent'],
+        },
+      },
+    },
+    {
+      type: 'function' as const,
+      function: {
+        name: 'simulate_credit',
+        description: 'Simuler un crédit immobilier : mensualités, coût total, taux d\'endettement et tableau d\'amortissement.',
+        parameters: {
+          type: 'object',
+          properties: {
+            loan_amount: { type: 'number', description: 'Montant du bien en euros (obligatoire)' },
+            annual_rate: { type: 'number', description: 'Taux annuel en % (obligatoire, ex: 3.5)' },
+            duration_years: { type: 'number', description: 'Durée du prêt en années (obligatoire, 1-30)' },
+            insurance_rate_pct: { type: 'number', description: 'Taux d\'assurance emprunteur en % (défaut: 0.34)' },
+            personal_contribution: { type: 'number', description: 'Apport personnel en euros (défaut: 0)' },
+            monthly_income: { type: 'number', description: 'Revenus mensuels nets du foyer en euros (pour calcul endettement)' },
+          },
+          required: ['loan_amount', 'annual_rate', 'duration_years'],
         },
       },
     },

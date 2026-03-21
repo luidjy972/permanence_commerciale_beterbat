@@ -201,6 +201,28 @@ async function executeTool(
       }
     }
 
+    // ===== APPLICATIONS =====
+    case 'simulate_pricing': {
+      const { simulatePricing } = await import('@/app/api/applications/simulateur-prix/route')
+      const coeffs: Record<string, number> = {}
+      if (args.coeff_r_minus_1 !== undefined) coeffs['R-1'] = args.coeff_r_minus_1 as number
+      if (args.coeff_rdc !== undefined) coeffs['RDC'] = args.coeff_rdc as number
+      if (args.coeff_r_plus_1 !== undefined) coeffs['R+1'] = args.coeff_r_plus_1 as number
+      if (args.coeff_r_plus_2 !== undefined) coeffs['R+2'] = args.coeff_r_plus_2 as number
+      const result = simulatePricing(coeffs, args.batiment as string | undefined)
+      return { result }
+    }
+    case 'calculate_rentabilite': {
+      const { computeRentabilite } = await import('@/app/api/applications/calculatrice-rentabilite/route')
+      const result = computeRentabilite(args as { purchase_price: number; monthly_rent: number; [k: string]: unknown })
+      return { result }
+    }
+    case 'simulate_credit': {
+      const { computeCredit } = await import('@/app/api/applications/simulateur-credit/route')
+      const result = computeCredit(args as { loan_amount: number; annual_rate: number; duration_years: number; [k: string]: unknown })
+      return { result }
+    }
+
     default:
       throw new Error(`Fonction inconnue: ${name}`)
   }
