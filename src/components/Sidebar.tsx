@@ -10,6 +10,7 @@ import {
   Grid3X3,
   Settings,
   KeyRound,
+  Calculator,
   X,
   ChevronsLeft,
   ChevronsRight,
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Commerciaux', href: '/dashboard/commercials', icon: Users },
   { name: 'Prospection', href: '/dashboard/prospection', icon: TrendingUp },
   { name: 'Applications', href: '/dashboard/applications', icon: Grid3X3 },
+  { name: 'Simulateur Prix', href: '/dashboard/simulateur', icon: Calculator },
   { name: 'Utilisateurs', href: '/dashboard/users', icon: Settings },
   { name: 'Paramètres API', href: '/dashboard/settings', icon: KeyRound },
 ]

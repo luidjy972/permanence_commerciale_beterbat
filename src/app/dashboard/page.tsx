@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { CalendarDays, Users, TrendingUp, Clock, DollarSign, CheckCircle2 } from 'lucide-react'
+import { CalendarDays, Users, TrendingUp, Clock, DollarSign, Calculator } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <Link
           href="/dashboard/planning"
           className="group card p-6 transition-all hover:scale-[1.01]"
@@ -101,6 +101,22 @@ export default async function DashboardPage() {
           </div>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             Suivi et gestion de la prospection commerciale avec pipeline et KPIs.
+          </p>
+        </Link>
+
+        <Link
+          href="/dashboard/simulateur"
+          className="group card p-6 transition-all hover:scale-[1.01]"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(251,191,36,0.1)' }}>
+              <Calculator className="h-5 w-5 text-yellow-500" />
+            </div>
+            <h3 className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>Simulateur de prix</h3>
+          </div>
+          <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Simuler les prix de la Résidence Vue des Îlets avec ajustement par étage.
           </p>
         </Link>
       </div>
