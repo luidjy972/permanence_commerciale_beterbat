@@ -338,7 +338,6 @@ export default function NewApplicationPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Décrivez votre application..."
               placeholder={isEditMode ? 'Décrivez les modifications à apporter...' : 'Décrivez votre application...'}
               disabled={isLoading}
               rows={1}
