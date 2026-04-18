@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Calculator, CreditCard, PieChart, Lock, Plus, Sparkles } from 'lucide-react'
+import { Calculator, CreditCard, PieChart, Lock, Plus, Sparkles, PencilLine } from 'lucide-react'
 
 const apps = [
   {
@@ -31,7 +31,7 @@ const apps = [
 export default function ApplicationsPage() {
   return (
     <div>
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
             Applications
@@ -40,14 +40,29 @@ export default function ApplicationsPage() {
             Accédez aux outils et mini-applications intégrées
           </p>
         </div>
-        <Link
-          href="/dashboard/applications/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-red-500/20 hover:scale-[1.02]"
-          style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)' }}
-        >
-          <Sparkles className="h-4 w-4" />
-          Créer une application
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Link
+            href="/dashboard/applications/new?mode=edit"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all hover:shadow-lg hover:scale-[1.02]"
+            style={{
+              color: 'var(--color-text-primary)',
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-bg-card)',
+            }}
+          >
+            <PencilLine className="h-4 w-4" />
+            Modifier une application
+          </Link>
+
+          <Link
+            href="/dashboard/applications/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:shadow-lg hover:shadow-red-500/20 hover:scale-[1.02]"
+            style={{ background: 'linear-gradient(135deg, #ef4444, #b91c1c)' }}
+          >
+            <Sparkles className="h-4 w-4" />
+            Créer une application
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
