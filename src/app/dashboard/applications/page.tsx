@@ -45,9 +45,9 @@ export default function ApplicationsPage() {
             href="/dashboard/applications/new?mode=edit"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition-all hover:shadow-lg hover:scale-[1.02]"
             style={{
-              color: 'var(--color-text-primary)',
-              borderColor: 'var(--color-border)',
-              backgroundColor: 'var(--color-bg-card)',
+              color: '#ffffff',
+              borderColor: '#84cc16',
+              backgroundColor: '#84cc16',
             }}
           >
             <PencilLine className="h-4 w-4" />
