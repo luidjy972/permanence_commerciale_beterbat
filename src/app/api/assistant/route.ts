@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { ensureAssistantApiKey } from '@/lib/assistant-key'
 import OpenAI from 'openai'
 import { getAssistantSystemPrompt, getAssistantTools } from '@/lib/assistant-docs'
@@ -7,7 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-// ---- Tool execution: uses authenticated Supabase client ----
+// ---- Tool execution: uses service-role Supabase client ----
 async function executeTool(
   supabase: SupabaseClient,
   name: string,
@@ -285,12 +285,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Messages requis' }, { status: 400 })
     }
 
-    // Use authenticated server client (user's session via cookies)
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié. Veuillez vous reconnecter.' }, { status: 401 })
-    }
+    const supabase = createServiceClient()
 
     // Auto-provision a dedicated API key for the assistant (first-time only)
     try {

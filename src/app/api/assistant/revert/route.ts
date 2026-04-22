@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export async function POST(request: Request) {
   try {
@@ -9,11 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Données d\'annulation invalides' }, { status: 400 })
     }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
+    const supabase = createServiceClient()
 
     const allowedTables = ['commercials', 'agencies', 'prospect_projects', 'prospection_objectives', 'planning_state']
 

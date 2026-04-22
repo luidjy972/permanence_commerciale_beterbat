@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { hashApiKey } from '@/lib/api-auth'
 import { randomBytes } from 'crypto'
 
 export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 })
-  }
+  const supabase = createServiceClient()
 
   const { data, error } = await supabase
     .from('api_keys')
@@ -21,11 +17,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 })
-  }
+  const supabase = createServiceClient()
 
   let body: Record<string, unknown>
   try {
@@ -50,7 +42,7 @@ export async function POST(request: Request) {
       name: name.trim(),
       key_hash: keyHash,
       key_prefix: keyPrefix,
-      created_by: user.email,
+      created_by: 'direct-access',
     })
     .select('id, name, key_prefix, created_by, created_at')
     .single()
