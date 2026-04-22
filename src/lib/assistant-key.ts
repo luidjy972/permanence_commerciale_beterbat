@@ -1,5 +1,5 @@
 import { createHash, createHmac } from 'crypto'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const ASSISTANT_KEY_NAME = 'Assistant IA Beterbat (auto)'
 
@@ -24,7 +24,7 @@ function hashKey(key: string): string {
 
 /**
  * Ensures the assistant's dedicated API key exists in the database.
- * Uses the current user's session (via cookies) for the insert.
+ * Uses the service role to operate without an interactive session.
  * Returns the raw API key string.
  */
 export async function ensureAssistantApiKey(): Promise<string> {
@@ -32,7 +32,7 @@ export async function ensureAssistantApiKey(): Promise<string> {
   const keyHash = hashKey(rawKey)
   const keyPrefix = rawKey.slice(0, 12)
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   // Check if key already exists
   const { data: existing } = await supabase

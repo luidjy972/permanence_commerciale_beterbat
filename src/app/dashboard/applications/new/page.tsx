@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import {
   ArrowLeft,
@@ -41,9 +42,15 @@ function parseActions(content: string): { text: string; actions: ActionButton[] 
   return { text: text.trim(), actions: allActions }
 }
 
-const INITIAL_PROMPT = 'Je souhaite créer une nouvelle application pour le dashboard Beterbat. Guide-moi étape par étape.'
+const INITIAL_PROMPT_CREATE = 'Je souhaite créer une nouvelle application pour le dashboard Beterbat. Guide-moi étape par étape.'
+const INITIAL_PROMPT_EDIT = 'Je souhaite modifier une application existante pour le dashboard Beterbat. Commence par lister les spécifications existantes puis guide-moi étape par étape pour la mise à jour.'
 
 export default function NewApplicationPage() {
+  const searchParams = useSearchParams()
+  const mode = searchParams.get('mode') === 'edit' ? 'edit' : 'create'
+  const isEditMode = mode === 'edit'
+  const initialPrompt = isEditMode ? INITIAL_PROMPT_EDIT : INITIAL_PROMPT_CREATE
+
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -68,10 +75,10 @@ export default function NewApplicationPage() {
   useEffect(() => {
     if (!initialized.current) {
       initialized.current = true
-      sendMessage(INITIAL_PROMPT)
+      sendMessage(initialPrompt)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [initialPrompt])
 
   async function sendMessage(text: string) {
     if (!text.trim() || isLoading) return
@@ -126,7 +133,7 @@ export default function NewApplicationPage() {
     const isUser = msg.role === 'user'
     const { text, actions } = parseActions(msg.content)
     // Hide the initial auto-prompt from display
-    if (isUser && index === 0 && msg.content === INITIAL_PROMPT) return null
+    if (isUser && index === 0 && msg.content === initialPrompt) return null
 
     return (
       <div key={index} className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -205,7 +212,7 @@ export default function NewApplicationPage() {
               </p>
             </div>
             <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-              Nouvelle application
+              {isEditMode ? 'Modifier une application' : 'Nouvelle application'}
             </h1>
           </div>
 
@@ -331,7 +338,7 @@ export default function NewApplicationPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Décrivez votre application..."
+              placeholder={isEditMode ? 'Décrivez les modifications à apporter...' : 'Décrivez votre application...'}
               disabled={isLoading}
               rows={1}
               className="flex-1 resize-none bg-[var(--color-bg-input)] border border-[var(--color-border)] rounded-xl px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-tertiary)] outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/20 transition-all disabled:opacity-50"

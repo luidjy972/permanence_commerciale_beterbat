@@ -1,8 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { LogOut, User, Moon, Sun, Menu } from 'lucide-react'
+import { User, Moon, Sun, Menu } from 'lucide-react'
 import { useTheme } from './ThemeProvider'
 
 interface DashboardHeaderProps {
@@ -11,15 +9,7 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ userEmail, onMenuToggle }: DashboardHeaderProps) {
-  const router = useRouter()
-  const supabase = createClient()
   const { theme, toggleTheme } = useTheme()
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
 
   return (
     <header
@@ -70,22 +60,6 @@ export default function DashboardHeader({ userEmail, onMenuToggle }: DashboardHe
             <span className="hidden sm:inline">{userEmail}</span>
           </div>
         )}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all"
-          style={{ color: 'var(--color-text-secondary)' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-danger-light)'
-            e.currentTarget.style.color = '#ef4444'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = 'var(--color-text-secondary)'
-          }}
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Déconnexion</span>
-        </button>
       </div>
     </header>
   )

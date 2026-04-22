@@ -20,7 +20,6 @@ export default function UsersPage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<AppUser[]>([])
-  const [currentAuthId, setCurrentAuthId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editData, setEditData] = useState({ name: '', email: '', role: 'user' as 'admin' | 'user' })
   const [changingPasswordId, setChangingPasswordId] = useState<number | null>(null)
@@ -32,9 +31,6 @@ export default function UsersPage() {
 
   const loadUsers = useCallback(async () => {
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) setCurrentAuthId(user.id)
-
     const { data, error } = await supabase
       .from('app_users')
       .select('*')
@@ -96,11 +92,10 @@ export default function UsersPage() {
       return
     }
     try {
-      const isSelf = u.auth_id === currentAuthId
       const { error } = await supabase.rpc('update_app_user', {
         p_auth_id: u.auth_id,
         p_name: editData.name.trim(),
-        p_role: isSelf ? u.role : editData.role,
+        p_role: editData.role,
         p_email: editData.email.trim() !== u.email ? editData.email.trim() : null,
       })
       if (error) throw error
@@ -257,8 +252,6 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {users.map((u) => {
-                const isSelf = u.auth_id === currentAuthId
-
                 if (editingId === u.id) {
                   return (
                     <tr key={u.id} style={{ borderTop: '1px solid var(--color-border-light)', backgroundColor: 'var(--color-accent-light)' }}>
@@ -281,25 +274,14 @@ export default function UsersPage() {
                         />
                       </td>
                       <td className="px-6 py-3">
-                        {isSelf ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                            style={u.role === 'admin'
-                              ? { backgroundColor: 'rgba(147, 51, 234, 0.15)', color: '#a855f7' }
-                              : { backgroundColor: 'var(--color-accent-light)', color: 'var(--color-text-secondary)' }
-                            }>
-                            {u.role === 'admin' ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
-                            {u.role === 'admin' ? 'Admin' : 'Utilisateur'}
-                          </span>
-                        ) : (
-                          <select
-                            value={editData.role}
-                            onChange={(e) => setEditData({ ...editData, role: e.target.value as 'admin' | 'user' })}
-                            className="input-field !py-1.5"
-                          >
-                            <option value="user">Utilisateur</option>
-                            <option value="admin">Administrateur</option>
-                          </select>
-                        )}
+                        <select
+                          value={editData.role}
+                          onChange={(e) => setEditData({ ...editData, role: e.target.value as 'admin' | 'user' })}
+                          className="input-field !py-1.5"
+                        >
+                          <option value="user">Utilisateur</option>
+                          <option value="admin">Administrateur</option>
+                        </select>
                       </td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -350,14 +332,7 @@ export default function UsersPage() {
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-table-row-hover)')}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
                     <td className="px-6 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                      <div className="flex items-center gap-2">
-                        {u.name || '—'}
-                        {isSelf && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ backgroundColor: 'var(--color-accent-light)', color: 'var(--color-accent)' }}>
-                            Vous
-                          </span>
-                        )}
-                      </div>
+                      {u.name || '—'}
                     </td>
                     <td className="px-6 py-3" style={{ color: 'var(--color-text-secondary)' }}>{u.email}</td>
                     <td className="px-6 py-3">
@@ -388,16 +363,14 @@ export default function UsersPage() {
                         >
                           <Key className="h-4 w-4" />
                         </button>
-                        {!isSelf && (
-                          <button
-                            onClick={() => deleteUser(u)}
-                            className="p-1.5 rounded-lg transition-colors"
-                            style={{ color: 'var(--color-text-tertiary)' }}
-                            title="Supprimer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => deleteUser(u)}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ color: 'var(--color-text-tertiary)' }}
+                          title="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

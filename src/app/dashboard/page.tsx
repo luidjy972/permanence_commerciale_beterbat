@@ -1,9 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { CalendarDays, Users, TrendingUp, Clock, DollarSign, Calculator } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
+  const supabase = createServiceClient()
 
   const [{ data: commercials }, { data: planningState }, { data: prospectProjects }] = await Promise.all([
     supabase.from('commercials').select('*'),
